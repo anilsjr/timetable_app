@@ -12,4 +12,24 @@ class ClassRoom {
     required this.studentCount,
     required this.subjectIds,
   });
+
+  factory ClassRoom.fromJson(Map<String, dynamic> json) {
+    return ClassRoom(
+      id: json['id'] as String,
+      className: json['className'] as String,
+      section: json['section'] as String,
+      studentCount: json['studentCount'] as int,
+      subjectIds: (json['subjectIds'] as List<dynamic>).cast<String>(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'className': className,
+      'section': section,
+      'studentCount': studentCount,
+      'subjectIds': subjectIds,
+    };
+  }
 }
