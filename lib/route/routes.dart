@@ -5,6 +5,7 @@ import '../ui/class_room/class_room_page.dart';
 import '../ui/faculty/faculty_page.dart';
 import '../ui/home_page.dart';
 import '../ui/subject/subject_page.dart';
+import '../ui/timetable/timetable_page.dart';
 import 'route_name.dart';
 
 class Routes {
@@ -15,6 +16,14 @@ class Routes {
   /// Sets the storage service for route builders.
   static void setStorageService(StorageService storageService) {
     _storageService = storageService;
+  }
+
+  /// Gets the storage service.
+  static StorageService getStorageService() {
+    if (_storageService == null) {
+      throw Exception('StorageService not initialized');
+    }
+    return _storageService!;
   }
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -40,6 +49,12 @@ class Routes {
       case RouteName.classRoom:
         return MaterialPageRoute<void>(
           builder: (_) => ClassRoomPage(storageService: _storageService!),
+          settings: settings,
+        );
+
+      case RouteName.timeTable:
+        return MaterialPageRoute<void>(
+          builder: (_) => TimetablePage(storageService: _storageService!),
           settings: settings,
         );
 

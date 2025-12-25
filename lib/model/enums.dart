@@ -13,4 +13,5 @@ enum SlotType {
   shortBreak,
   lunchBreak,
   free,
+  expertLecture
 }

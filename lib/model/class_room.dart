@@ -32,4 +32,12 @@ class ClassRoom {
       'subjectIds': subjectIds,
     };
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ClassRoom && runtimeType == other.runtimeType && id == other.id;
+
+  @override
+  int get hashCode => id.hashCode;
 }
