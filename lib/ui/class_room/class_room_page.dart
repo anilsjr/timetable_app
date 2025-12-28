@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 
-import '../../model/class_room.dart';
+import '../../model/class_section.dart';
 import '../../model/subject.dart';
 import '../../service/storage_service.dart';
 import 'class_room_view_model.dart';
 
 /// Page for managing class rooms (add, edit, delete).
-class ClassRoomPage extends StatefulWidget {
-  const ClassRoomPage({super.key, required this.storageService});
+class ClassSectionPage extends StatefulWidget {
+  const ClassSectionPage({super.key, required this.storageService});
 
   final StorageService storageService;
 
   @override
-  State<ClassRoomPage> createState() => _ClassRoomPageState();
+  State<ClassSectionPage> createState() => _ClassSectionPageState();
 }
 
-class _ClassRoomPageState extends State<ClassRoomPage> {
-  late final ClassRoomViewModel _viewModel;
+class _ClassSectionPageState extends State<ClassSectionPage> {
+  late final ClassSectionViewModel _viewModel;
 
   @override
   void initState() {
     super.initState();
-    _viewModel = ClassRoomViewModel(storageService: widget.storageService);
+    _viewModel = ClassSectionViewModel(storageService: widget.storageService);
     _viewModel.addListener(_onViewModelChange);
   }
 
@@ -47,18 +47,15 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
     );
   }
 
-  Future<void> _showAddEditDialog({ClassRoom? classRoom}) async {
-    final isEditing = classRoom != null;
-    final classNameController = TextEditingController(
-      text: classRoom?.className ?? '',
-    );
-    final sectionController = TextEditingController(
-      text: classRoom?.section ?? '',
+  Future<void> _showAddEditDialog({ClassSection? classSection}) async {
+    final isEditing = classSection != null;
+    final idController = TextEditingController(
+      text: classSection?.fullId ?? '',
     );
     final studentCountController = TextEditingController(
-      text: classRoom?.studentCount.toString() ?? '',
+      text: classSection?.studentCount.toString() ?? '',
     );
-    var selectedSubjectIds = List<String>.from(classRoom?.subjectIds ?? []);
+    var selectedSubjectCodes = List<String>.from(classSection?.subjectCodes ?? []);
 
     final formKey = GlobalKey<FormState>();
 
@@ -79,32 +76,17 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         TextFormField(
-                          controller: classNameController,
+                          controller: idController,
                           decoration: const InputDecoration(
-                            labelText: 'Class Name *',
-                            hintText: 'e.g., 10th Grade',
-                            border: OutlineInputBorder(),
-                          ),
-                          textCapitalization: TextCapitalization.words,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Class name is required';
-                            }
-                            return null;
-                          },
-                        ),
-                        const SizedBox(height: 16),
-                        TextFormField(
-                          controller: sectionController,
-                          decoration: const InputDecoration(
-                            labelText: 'Section *',
-                            hintText: 'e.g., A, B, C',
+                            labelText: 'Class ID *',
+                            hintText: 'e.g., CSE-AIML-T1',
                             border: OutlineInputBorder(),
                           ),
                           textCapitalization: TextCapitalization.characters,
+                          enabled: !isEditing,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Section is required';
+                              return 'Class ID is required';
                             }
                             return null;
                           },
@@ -132,9 +114,9 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
                         const SizedBox(height: 16),
                         _SubjectMultiSelect(
                           subjects: _viewModel.subjects,
-                          selectedIds: selectedSubjectIds,
+                          selectedIds: selectedSubjectCodes,
                           onChanged: (ids) {
-                            setDialogState(() => selectedSubjectIds = ids);
+                            setDialogState(() => selectedSubjectCodes = ids);
                           },
                         ),
                       ],
@@ -164,18 +146,15 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
 
     if (result != true) return;
 
-    final className = classNameController.text.trim();
-    final section = sectionController.text.trim();
+    final id = idController.text.trim();
     final studentCount = int.tryParse(studentCountController.text) ?? 0;
 
     bool success;
     if (isEditing) {
-      success = await _viewModel.updateClassRoom(
-        id: classRoom.id,
-        className: className,
-        section: section,
+      success = await _viewModel.updateClassSection(
+        id: classSection.id,
         studentCount: studentCount,
-        subjectIds: selectedSubjectIds,
+        subjectCodes: selectedSubjectCodes,
       );
       if (success) {
         _showToast('Class updated successfully');
@@ -186,11 +165,10 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
         );
       }
     } else {
-      success = await _viewModel.addClassRoom(
-        className: className,
-        section: section,
+      success = await _viewModel.addClassSection(
+        id: id,
         studentCount: studentCount,
-        subjectIds: selectedSubjectIds,
+        subjectCodes: selectedSubjectCodes,
       );
       if (success) {
         _showToast('Class added successfully');
@@ -200,14 +178,14 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
     }
   }
 
-  Future<void> _confirmDelete(ClassRoom classRoom) async {
+  Future<void> _confirmDelete(ClassSection classSection) async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) {
         return AlertDialog(
           title: const Text('Delete Class'),
           content: Text(
-            'Are you sure you want to delete "${classRoom.className} - ${classRoom.section}"?',
+            'Are you sure you want to delete "${classSection.displayName}"?',
           ),
           actions: [
             TextButton(
@@ -226,7 +204,7 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
 
     if (confirmed != true) return;
 
-    final success = await _viewModel.deleteClassRoom(classRoom.id);
+    final success = await _viewModel.deleteClassSection(classSection.id);
     if (success) {
       _showToast('Class deleted successfully');
     } else {
@@ -252,7 +230,7 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    if (_viewModel.classRooms.isEmpty) {
+    if (_viewModel.classSections.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -278,14 +256,14 @@ class _ClassRoomPageState extends State<ClassRoomPage> {
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 80),
-      itemCount: _viewModel.classRooms.length,
+      itemCount: _viewModel.classSections.length,
       itemBuilder: (context, index) {
-        final classRoom = _viewModel.classRooms[index];
-        return _ClassRoomCard(
-          classRoom: classRoom,
-          subjectNames: _viewModel.getSubjectNames(classRoom.subjectIds),
-          onEdit: () => _showAddEditDialog(classRoom: classRoom),
-          onDelete: () => _confirmDelete(classRoom),
+        final classSection = _viewModel.classSections[index];
+        return _ClassSectionCard(
+          classSection: classSection,
+          subjectNames: _viewModel.getSubjectNames(classSection.subjectCodes),
+          onEdit: () => _showAddEditDialog(classSection: classSection),
+          onDelete: () => _confirmDelete(classSection),
         );
       },
     );
@@ -336,7 +314,7 @@ class _SubjectMultiSelect extends StatelessWidget {
           ),
           child: Column(
             children: subjects.map((subject) {
-              final isSelected = selectedIds.contains(subject.id);
+              final isSelected = selectedIds.contains(subject.code);
               return CheckboxListTile(
                 title: Text(subject.name),
                 subtitle: Text(
@@ -346,9 +324,9 @@ class _SubjectMultiSelect extends StatelessWidget {
                 onChanged: (checked) {
                   final newIds = List<String>.from(selectedIds);
                   if (checked == true) {
-                    newIds.add(subject.id);
+                    newIds.add(subject.code);
                   } else {
-                    newIds.remove(subject.id);
+                    newIds.remove(subject.code);
                   }
                   onChanged(newIds);
                 },
@@ -363,15 +341,15 @@ class _SubjectMultiSelect extends StatelessWidget {
   }
 }
 
-class _ClassRoomCard extends StatelessWidget {
-  const _ClassRoomCard({
-    required this.classRoom,
+class _ClassSectionCard extends StatelessWidget {
+  const _ClassSectionCard({
+    required this.classSection,
     required this.subjectNames,
     required this.onEdit,
     required this.onDelete,
   });
 
-  final ClassRoom classRoom;
+  final ClassSection classSection;
   final List<String> subjectNames;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -399,7 +377,7 @@ class _ClassRoomCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '${classRoom.className} - ${classRoom.section}',
+                        classSection.displayName,
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -415,7 +393,7 @@ class _ClassRoomCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            '${classRoom.studentCount} students',
+                            '${classSection.studentCount} students',
                             style: TextStyle(
                               fontSize: 13,
                               color: colorScheme.onSurfaceVariant,

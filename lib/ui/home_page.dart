@@ -141,7 +141,7 @@ class _HomePageState extends State<HomePage> {
                       _ActionButton(
                         label: 'Manage Classes',
                         onPressed: () =>
-                            Navigator.pushNamed(context, RouteName.classRoom),
+                            Navigator.pushNamed(context, RouteName.ClassSection),
                       ),
                     ],
                   ),

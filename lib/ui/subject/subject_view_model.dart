@@ -45,9 +45,7 @@ class SubjectViewModel extends ChangeNotifier {
     bool isLab = false,
   }) async {
     try {
-      final id = DateTime.now().millisecondsSinceEpoch.toString();
       final subject = Subject(
-        id: id,
         name: name,
         code: code,
         weeklyLectures: weeklyLectures,
@@ -66,7 +64,6 @@ class SubjectViewModel extends ChangeNotifier {
 
   /// Updates an existing subject.
   Future<bool> updateSubject({
-    required String id,
     required String name,
     required String code,
     required int weeklyLectures,
@@ -74,7 +71,6 @@ class SubjectViewModel extends ChangeNotifier {
   }) async {
     try {
       final subject = Subject(
-        id: id,
         name: name,
         code: code,
         weeklyLectures: weeklyLectures,
@@ -91,10 +87,10 @@ class SubjectViewModel extends ChangeNotifier {
     }
   }
 
-  /// Deletes a subject by ID.
-  Future<bool> deleteSubject(String id) async {
+  /// Deletes a subject by code.
+  Future<bool> deleteSubject(String code) async {
     try {
-      await _storageService.deleteSubject(id);
+      await _storageService.deleteSubject(code);
       loadSubjects();
       return true;
     } catch (e) {
@@ -104,10 +100,10 @@ class SubjectViewModel extends ChangeNotifier {
     }
   }
 
-  /// Gets a subject by ID.
-  Subject? getSubject(String id) {
+  /// Gets a subject by code.
+  Subject? getSubject(String code) {
     try {
-      return _subjects.firstWhere((s) => s.id == id);
+      return _subjects.firstWhere((s) => s.code == code);
     } catch (_) {
       return null;
     }

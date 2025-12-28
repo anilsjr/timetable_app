@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../model/class_room.dart';
+import '../../model/class_section.dart';
 import '../../model/enums.dart';
 import '../../model/faculty.dart';
 import '../../model/subject.dart';
@@ -19,19 +19,14 @@ class TimetablePage extends StatefulWidget {
   State<TimetablePage> createState() => _TimetablePageState();
 }
 
-class _TimetablePageState extends State<TimetablePage>
-    with SingleTickerProviderStateMixin {
+class _TimetablePageState extends State<TimetablePage> {
   late final TimetableViewModel _viewModel;
-  late final TabController _tabController;
-
-  final List<WeekDay> _weekDays = WeekDay.values;
 
   @override
   void initState() {
     super.initState();
     _viewModel = TimetableViewModel(storageService: widget.storageService);
     _viewModel.addListener(_onViewModelChange);
-    _tabController = TabController(length: _weekDays.length, vsync: this);
   }
 
   void _onViewModelChange() {
@@ -42,7 +37,6 @@ class _TimetablePageState extends State<TimetablePage>
   void dispose() {
     _viewModel.removeListener(_onViewModelChange);
     _viewModel.dispose();
-    _tabController.dispose();
     super.dispose();
   }
 
@@ -87,26 +81,24 @@ class _TimetablePageState extends State<TimetablePage>
     }
   }
 
-  Future<void> _showAddEntryDialog(WeekDay day, {TimetableEntry? entry}) async {
-    if (_viewModel.selectedClassRoom == null) {
+  Future<void> _showAddEntryDialog(
+    WeekDay day, {
+    TimeSlot? slot,
+    TimetableEntry? entry,
+  }) async {
+    if (_viewModel.selectedClassSection == null) {
       _showToast('Please select a class first', isError: true);
       return;
     }
 
     final isEditing = entry != null;
-    var selectedSlotType = entry?.slotType ?? SlotType.lecture;
-    var selectedSubjectId = entry?.subjectId;
-    var selectedFacultyId = entry?.facultyId;
+    final targetSlot = slot ?? entry?.timeSlot;
 
-    final startHourController = TextEditingController(
-      text: entry?.timeSlot.startTime.hour.toString() ?? '9',
-    );
-    final startMinuteController = TextEditingController(
-      text: entry?.timeSlot.startTime.minute.toString().padLeft(2, '0') ?? '00',
-    );
-    final durationController = TextEditingController(
-      text: entry?.timeSlot.durationMinutes.toString() ?? '45',
-    );
+    if (targetSlot == null) return;
+
+    var selectedSlotType = entry?.slotType ?? targetSlot.type;
+    var selectedSubjectCode = entry?.subjectCode;
+    var selectedFacultyId = entry?.facultyId;
 
     final formKey = GlobalKey<FormState>();
 
@@ -115,20 +107,14 @@ class _TimetablePageState extends State<TimetablePage>
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setDialogState) {
-            final classSubjects = _viewModel.selectedClassRoom!.subjectIds
+            final classSubjects = _viewModel.selectedClassSection!.subjectCodes
                 .map((id) => _viewModel.getSubject(id))
                 .whereType<Subject>()
                 .toList();
 
-            final availableFaculties = selectedSubjectId != null
-                ? _viewModel.getFacultiesForSubject(selectedSubjectId!)
+            final availableFaculties = selectedSubjectCode != null
+                ? _viewModel.getFacultiesForSubject(selectedSubjectCode!)
                 : <Faculty>[];
-
-            // Ensure selectedFacultyId is valid for the current subject
-            if (selectedFacultyId != null &&
-                !availableFaculties.any((f) => f.id == selectedFacultyId)) {
-              selectedFacultyId = null;
-            }
 
             return AlertDialog(
               title: Text(isEditing ? 'Edit Entry' : 'Add Entry'),
@@ -145,6 +131,10 @@ class _TimetablePageState extends State<TimetablePage>
                           'Day: ${_formatWeekDay(day)}',
                           style: Theme.of(context).textTheme.titleMedium,
                         ),
+                        Text(
+                          'Time: ${_formatTime(targetSlot.startTime)} - ${_formatTime(targetSlot.endTime)}',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
                         const SizedBox(height: 16),
                         // Slot Type Dropdown
                         DropdownButtonFormField<SlotType>(
@@ -153,7 +143,12 @@ class _TimetablePageState extends State<TimetablePage>
                             labelText: 'Slot Type',
                             border: OutlineInputBorder(),
                           ),
-                          items: SlotType.values.map((type) {
+                          items: [
+                            SlotType.lecture,
+                            SlotType.lab,
+                            SlotType.expertLecture,
+                            SlotType.free,
+                          ].map((type) {
                             return DropdownMenuItem(
                               value: type,
                               child: Text(_formatSlotType(type)),
@@ -162,90 +157,25 @@ class _TimetablePageState extends State<TimetablePage>
                           onChanged: (value) {
                             setDialogState(() {
                               selectedSlotType = value!;
-                              if (value == SlotType.shortBreak ||
-                                  value == SlotType.lunchBreak ||
-                                  value == SlotType.free) {
-                                selectedSubjectId = null;
+                              if (value == SlotType.free) {
+                                selectedSubjectCode = null;
                                 selectedFacultyId = null;
                               }
                             });
                           },
                         ),
-                        const SizedBox(height: 16),
-                        // Time inputs
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: startHourController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Hour (0-23)',
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  final hour = int.tryParse(value ?? '');
-                                  if (hour == null || hour < 0 || hour > 23) {
-                                    return 'Invalid';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: startMinuteController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Minute',
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  final minute = int.tryParse(value ?? '');
-                                  if (minute == null ||
-                                      minute < 0 ||
-                                      minute > 59) {
-                                    return 'Invalid';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: durationController,
-                                decoration: const InputDecoration(
-                                  labelText: 'Duration (min)',
-                                  border: OutlineInputBorder(),
-                                ),
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  final duration = int.tryParse(value ?? '');
-                                  if (duration == null || duration <= 0) {
-                                    return 'Invalid';
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                        // Show subject/faculty only for lecture/lab
-                        if (selectedSlotType == SlotType.lecture ||
-                            selectedSlotType == SlotType.lab) ...[
+                        if (selectedSlotType != SlotType.free) ...[
                           const SizedBox(height: 16),
                           // Subject Dropdown
                           DropdownButtonFormField<String>(
-                            value: selectedSubjectId,
+                            value: selectedSubjectCode,
                             decoration: const InputDecoration(
                               labelText: 'Subject *',
                               border: OutlineInputBorder(),
                             ),
                             items: classSubjects.map((subject) {
                               return DropdownMenuItem(
-                                value: subject.id,
+                                value: subject.code,
                                 child: Text(
                                   '${subject.name} (${subject.code})',
                                 ),
@@ -253,25 +183,19 @@ class _TimetablePageState extends State<TimetablePage>
                             }).toList(),
                             onChanged: (value) {
                               setDialogState(() {
-                                selectedSubjectId = value;
+                                selectedSubjectCode = value;
                                 selectedFacultyId = null;
                               });
                             },
-                            validator: (value) {
-                              if ((selectedSlotType == SlotType.lecture ||
-                                      selectedSlotType == SlotType.lab) &&
-                                  value == null) {
-                                return 'Please select a subject';
-                              }
-                              return null;
-                            },
+                            validator: (value) =>
+                                value == null ? 'Please select a subject' : null,
                           ),
                           const SizedBox(height: 16),
                           // Faculty Dropdown
                           DropdownButtonFormField<String>(
                             value: selectedFacultyId,
                             decoration: InputDecoration(
-                              labelText: 'Faculty',
+                              labelText: 'Faculty *',
                               border: const OutlineInputBorder(),
                               helperText: availableFaculties.isEmpty
                                   ? 'No faculty available for this subject'
@@ -290,6 +214,8 @@ class _TimetablePageState extends State<TimetablePage>
                                       () => selectedFacultyId = value,
                                     );
                                   },
+                            validator: (value) =>
+                                value == null ? 'Please select a faculty' : null,
                           ),
                         ],
                       ],
@@ -319,25 +245,14 @@ class _TimetablePageState extends State<TimetablePage>
 
     if (result != true) return;
 
-    final hour = int.parse(startHourController.text);
-    final minute = int.parse(startMinuteController.text);
-    final duration = int.parse(durationController.text);
-
-    final timeSlot = _viewModel.createTimeSlot(
-      hour: hour,
-      minute: minute,
-      durationMinutes: duration,
-      type: selectedSlotType,
-    );
-
     final newEntry = TimetableEntry(
       id: entry?.id ?? DateTime.now().millisecondsSinceEpoch.toString(),
       day: day,
-      timeSlot: timeSlot,
+      timeSlot: targetSlot,
       slotType: selectedSlotType,
-      subjectId: selectedSubjectId,
+      subjectCode: selectedSubjectCode,
       facultyId: selectedFacultyId,
-      classRoomId: _viewModel.selectedClassRoom!.id,
+      classSectionId: _viewModel.selectedClassSection!.id,
     );
 
     final success = await _viewModel.saveEntry(newEntry);
@@ -423,7 +338,8 @@ class _TimetablePageState extends State<TimetablePage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Timetable'),
+        toolbarHeight: 30,
+        title: const Text('Timetable Grid', style: TextStyle(color: Colors.red, fontSize: 16),),
         centerTitle: true,
         actions: [
           if (_viewModel.currentTimetable != null)
@@ -433,24 +349,7 @@ class _TimetablePageState extends State<TimetablePage>
               onPressed: _confirmDeleteTimetable,
             ),
         ],
-        bottom: _viewModel.selectedClassRoom != null
-            ? TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                tabs: _weekDays.map((day) {
-                  return Tab(text: _formatWeekDay(day));
-                }).toList(),
-              )
-            : null,
       ),
-      floatingActionButton: _viewModel.selectedClassRoom != null
-          ? FloatingActionButton.extended(
-              onPressed: () =>
-                  _showAddEntryDialog(_weekDays[_tabController.index]),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Entry'),
-            )
-          : null,
       body: _buildBody(),
     );
   }
@@ -464,13 +363,17 @@ class _TimetablePageState extends State<TimetablePage>
       children: [
         _buildClassSelector(),
         Expanded(
-          child: _viewModel.selectedClassRoom == null
+          child: _viewModel.selectedClassSection == null
               ? _buildNoClassSelected()
-              : TabBarView(
-                  controller: _tabController,
-                  children: _weekDays.map((day) {
-                    return _buildDayTimetable(day);
-                  }).toList(),
+              : SingleChildScrollView(
+                  child: Column(
+                    children: [
+                      _buildTimetableGrid(),
+                      const SizedBox(height: 32),
+                      _buildFacultyAssignmentTable(),
+                      const SizedBox(height: 32),
+                    ],
+                  ),
                 ),
         ),
       ],
@@ -478,39 +381,61 @@ class _TimetablePageState extends State<TimetablePage>
   }
 
   Widget _buildClassSelector() {
+    final sortedClasses = List<ClassSection>.from(_viewModel.classSections)
+      ..sort((a, b) => a.fullId.compareTo(b.fullId));
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor, width: 0.5),
+        ),
       ),
       child: Row(
         children: [
+          Icon(
+            Icons.school_outlined,
+            size: 20,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+          const SizedBox(width: 12),
           Expanded(
-            child: DropdownButtonFormField<ClassRoom>(
-              value: _viewModel.selectedClassRoom,
-              decoration: const InputDecoration(
-                labelText: 'Select Class',
-                border: OutlineInputBorder(),
-                filled: true,
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<ClassSection>(
+                value: _viewModel.selectedClassSection,
+                isExpanded: true,
+                hint: const Text(
+                  'Select Class Section',
+                  style: TextStyle(fontSize: 14),
+                ),
+                icon: const Icon(Icons.arrow_drop_down, size: 20),
+                items: sortedClasses.map((classSection) {
+                  return DropdownMenuItem(
+                    value: classSection,
+                    child: Text(
+                      classSection.fullId,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) => _viewModel.selectClassSection(value),
               ),
-              hint: const Text('Choose a class to manage timetable'),
-              items: _viewModel.classRooms.map((classRoom) {
-                return DropdownMenuItem(
-                  value: classRoom,
-                  child: Text('${classRoom.className} - ${classRoom.section}'),
-                );
-              }).toList(),
-              onChanged: (value) => _viewModel.selectClassRoom(value),
             ),
           ),
-          if (_viewModel.selectedClassRoom != null) ...[
+          if (_viewModel.selectedClassSection != null) ...[
             const SizedBox(width: 8),
             IconButton(
-              icon: const Icon(Icons.refresh),
-              tooltip: 'Refresh',
+              icon: const Icon(Icons.refresh, size: 18),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              tooltip: 'Refresh Data',
               onPressed: () {
                 _viewModel.loadData();
-                _viewModel.selectClassRoom(_viewModel.selectedClassRoom);
+                _viewModel.selectClassSection(_viewModel.selectedClassSection);
               },
             ),
           ],
@@ -524,249 +449,281 @@ class _TimetablePageState extends State<TimetablePage>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.calendar_today_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _viewModel.classRooms.isEmpty
-                ? 'No classes available'
-                : 'Select a class to view/edit timetable',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: Theme.of(context).colorScheme.outline,
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.calendar_view_month_rounded,
+              size: 48,
+              color: Theme.of(context).colorScheme.primary,
             ),
           ),
-          if (_viewModel.classRooms.isEmpty) ...[
-            const SizedBox(height: 8),
-            const Text('Please add classes first'),
-          ],
+          const SizedBox(height: 24),
+          Text(
+            _viewModel.classSections.isEmpty
+                ? 'No Classes Found'
+                : 'Select a Class to Begin',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _viewModel.classSections.isEmpty
+                ? 'Please add class sections in the settings first.'
+                : 'Choose a section from the dropdown above to manage its schedule.',
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildDayTimetable(WeekDay day) {
-    final entries = _viewModel.getEntriesForDay(day);
+  Widget _buildTimetableGrid() {
+    final slots = TimetableViewModel.standardTimeSlots;
+    final days = WeekDay.values.where((d) => d != WeekDay.sunday).toList();
 
-    if (entries.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.event_busy,
-              size: 48,
-              color: Theme.of(context).colorScheme.outline,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No entries for ${_formatWeekDay(day)}',
-              style: TextStyle(color: Theme.of(context).colorScheme.outline),
-            ),
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: () => _showAddEntryDialog(day),
-              icon: const Icon(Icons.add),
-              label: const Text('Add Entry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 80, top: 8),
-      itemCount: entries.length,
-      itemBuilder: (context, index) {
-        final entry = entries[index];
-        return _EntryCard(
-          entry: entry,
-          subject: _viewModel.getSubject(entry.subjectId),
-          faculty: _viewModel.getFaculty(entry.facultyId),
-          formatTime: _formatTime,
-          formatSlotType: _formatSlotType,
-          onEdit: () => _showAddEntryDialog(day, entry: entry),
-          onDelete: () => _confirmDeleteEntry(entry),
-        );
-      },
-    );
-  }
-}
-
-class _EntryCard extends StatelessWidget {
-  const _EntryCard({
-    required this.entry,
-    required this.subject,
-    required this.faculty,
-    required this.formatTime,
-    required this.formatSlotType,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  final TimetableEntry entry;
-  final Subject? subject;
-  final Faculty? faculty;
-  final String Function(DateTime) formatTime;
-  final String Function(SlotType) formatSlotType;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
-
-  Color _getSlotColor(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    switch (entry.slotType) {
-      case SlotType.lecture:
-        return colorScheme.primaryContainer;
-      case SlotType.lab:
-        return colorScheme.tertiaryContainer;
-      case SlotType.shortBreak:
-        return Colors.orange.shade100;
-      case SlotType.lunchBreak:
-        return Colors.green.shade100;
-      case SlotType.free:
-        return colorScheme.surfaceContainerHighest;
-      case SlotType.expertLecture:
-        return Colors.purple.shade100;
-    }
-  }
-
-  IconData _getSlotIcon() {
-    switch (entry.slotType) {
-      case SlotType.lecture:
-        return Icons.school;
-      case SlotType.lab:
-        return Icons.science;
-      case SlotType.shortBreak:
-        return Icons.coffee;
-      case SlotType.lunchBreak:
-        return Icons.restaurant;
-      case SlotType.free:
-        return Icons.event_available;
-      case SlotType.expertLecture:
-        return Icons.record_voice_over;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final timeRange =
-        '${formatTime(entry.timeSlot.startTime)} - ${formatTime(entry.timeSlot.endTime)}';
-
-    return Card(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      color: _getSlotColor(context),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
       child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
+        padding: const EdgeInsets.all(16.0),
+        child: Table(
+          defaultColumnWidth: const FixedColumnWidth(120),
+          border: TableBorder.all(color: Colors.grey.shade300),
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: colorScheme.surface,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(_getSlotIcon(), color: colorScheme.primary),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        timeRange,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '${entry.timeSlot.durationMinutes} min',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  if (subject != null) ...[
-                    Text(
-                      subject!.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                      ),
+            // Header Row
+            TableRow(
+              decoration: BoxDecoration(color: Colors.grey.shade100),
+              children: [
+                const TableCell(
+                  child: Padding(
+                    padding: EdgeInsets.all(8.0),
+                    child: Text(
+                      'Day',
+                      style: TextStyle(fontWeight: FontWeight.bold),
                     ),
-                    if (faculty != null)
-                      Text(
-                        faculty!.name,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                  ] else
-                    Text(
-                      formatSlotType(entry.slotType),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') {
-                  onEdit();
-                } else if (value == 'delete') {
-                  onDelete();
-                }
-              },
-              itemBuilder: (context) => [
-                const PopupMenuItem(
-                  value: 'edit',
-                  child: Row(
-                    children: [
-                      Icon(Icons.edit_outlined, size: 20),
-                      SizedBox(width: 8),
-                      Text('Edit'),
-                    ],
                   ),
                 ),
-                PopupMenuItem(
-                  value: 'delete',
-                  child: Row(
-                    children: [
-                      Icon(Icons.delete_outline, size: 20, color: Colors.red),
-                      const SizedBox(width: 8),
-                      const Text('Delete', style: TextStyle(color: Colors.red)),
-                    ],
+                ...slots.map(
+                  (slot) => TableCell(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          Text(
+                            _formatTime(slot.startTime),
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            _formatTime(slot.endTime),
+                            style: const TextStyle(fontSize: 10),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ],
+            ),
+            // Day Rows
+            ...days.map(
+              (day) => TableRow(
+                children: [
+                  TableCell(
+                    verticalAlignment: TableCellVerticalAlignment.middle,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Text(
+                        _formatWeekDay(day),
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                  ...slots.map((slot) {
+                    final entry = _viewModel.getEntry(day, slot.id);
+                    return TableCell(child: _buildGridCell(day, slot, entry));
+                  }),
+                ],
+              ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildFacultyAssignmentTable() {
+    final classSection = _viewModel.selectedClassSection!;
+    final subjectFacultyMap = _viewModel.getSubjectFacultyMap();
+    final subjects = classSection.subjectCodes
+        .map((code) => _viewModel.getSubject(code))
+        .whereType<Subject>()
+        .toList();
+
+    if (subjects.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.assignment_ind_outlined,
+                  size: 18, color: Theme.of(context).colorScheme.primary),
+              const SizedBox(width: 8),
+              Text(
+                'Faculty Assignments',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Table(
+            columnWidths: const {
+              0: FixedColumnWidth(80),
+              1: FlexColumnWidth(2),
+              2: FlexColumnWidth(2),
+              3: FlexColumnWidth(2),
+            },
+            children: [
+              // Header
+              TableRow(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
+                ),
+                children: [
+                  _buildTableCell('Code', isHeader: true),
+                  _buildTableCell('Subject', isHeader: true),
+                  _buildTableCell('Faculty', isHeader: true),
+                  _buildTableCell('Coordinators', isHeader: true),
+                ],
+              ),
+              // Data Rows
+              ...subjects.asMap().entries.map((entry) {
+                final index = entry.key;
+                final subject = entry.value;
+                final facultyName =
+                    subjectFacultyMap[subject.code] ?? '---';
+                final coordinators =
+                    index == 0 ? classSection.coordinators.join(', ') : '';
+
+                return TableRow(
+                  children: [
+                    _buildTableCell(subject.code),
+                    _buildTableCell(subject.name),
+                    _buildTableCell(facultyName),
+                    _buildTableCell(coordinators),
+                  ],
+                );
+              }),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTableCell(String text, {bool isHeader = false}) {
+    return TableCell(
+      child: Container(
+        padding: const EdgeInsets.all(8.0),
+        decoration: text.isNotEmpty
+            ? BoxDecoration(
+                border: Border.all(color: Colors.grey.shade300),
+              )
+            : null,
+        child: Text(
+          text,
+          style: TextStyle(
+            fontWeight: isHeader ? FontWeight.bold : FontWeight.normal,
+            fontSize: isHeader ? 12 : 11,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGridCell(WeekDay day, TimeSlot slot, TimetableEntry? entry) {
+    if (slot.type == SlotType.shortBreak || slot.type == SlotType.lunchBreak) {
+      return Container(
+        height: 80,
+        color: slot.type == SlotType.lunchBreak
+            ? Colors.green.shade50
+            : Colors.orange.shade50,
+        child: Center(
+          child: RotatedBox(
+            quarterTurns: 1,
+            child: Text(
+              slot.type == SlotType.lunchBreak ? 'LUNCH' : 'BREAK',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+                color: slot.type == SlotType.lunchBreak
+                    ? Colors.green
+                    : Colors.orange,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () => _showAddEntryDialog(day, slot: slot, entry: entry),
+      onLongPress: entry != null ? () => _confirmDeleteEntry(entry) : null,
+      child: Container(
+        height: 80,
+        padding: const EdgeInsets.all(4),
+        color: entry != null ? _getEntryColor(entry) : null,
+        child: entry == null
+            ? const Icon(Icons.add, size: 16, color: Colors.grey)
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    _viewModel.getSubject(entry.subjectCode)?.code ?? '',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    _viewModel.getFaculty(entry.facultyId)?.name.split(' ').last ??
+                        '',
+                    style: const TextStyle(fontSize: 9),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (entry.slotType == SlotType.lab)
+                    const Text(
+                      '(LAB)',
+                      style: TextStyle(fontSize: 8, color: Colors.blue),
+                    ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Color _getEntryColor(TimetableEntry entry) {
+    if (entry.slotType == SlotType.lab) return Colors.blue.shade50;
+    if (entry.slotType == SlotType.expertLecture) return Colors.purple.shade50;
+    return Colors.blue.shade100;
   }
 }

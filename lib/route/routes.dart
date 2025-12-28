@@ -46,9 +46,9 @@ class Routes {
           settings: settings,
         );
 
-      case RouteName.classRoom:
+      case RouteName.ClassSection:
         return MaterialPageRoute<void>(
-          builder: (_) => ClassRoomPage(storageService: _storageService!),
+          builder: (_) => ClassSectionPage(storageService: _storageService!),
           settings: settings,
         );
 

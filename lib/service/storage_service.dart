@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:hive_flutter/hive_flutter.dart';
 
 import '../model/break_config.dart';
-import '../model/class_room.dart';
+import '../model/class_section.dart';
 import '../model/day_timetable.dart';
 import '../model/faculty.dart';
 import '../model/subject.dart';
@@ -15,7 +15,7 @@ import '../model/timetable_entry.dart';
 class StorageService {
   static const String _facultyBox = 'faculty';
   static const String _subjectBox = 'subject';
-  static const String _classRoomBox = 'classRoom';
+  static const String _classSectionBox = 'classSection';
   static const String _timeSlotBox = 'timeSlot';
   static const String _breakConfigBox = 'breakConfig';
   static const String _timetableEntryBox = 'timetableEntry';
@@ -24,7 +24,7 @@ class StorageService {
 
   late Box<String> _facultyBoxInstance;
   late Box<String> _subjectBoxInstance;
-  late Box<String> _classRoomBoxInstance;
+  late Box<String> _classSectionBoxInstance;
   late Box<String> _timeSlotBoxInstance;
   late Box<String> _breakConfigBoxInstance;
   late Box<String> _timetableEntryBoxInstance;
@@ -37,7 +37,7 @@ class StorageService {
 
     _facultyBoxInstance = await Hive.openBox<String>(_facultyBox);
     _subjectBoxInstance = await Hive.openBox<String>(_subjectBox);
-    _classRoomBoxInstance = await Hive.openBox<String>(_classRoomBox);
+    _classSectionBoxInstance = await Hive.openBox<String>(_classSectionBox);
     _timeSlotBoxInstance = await Hive.openBox<String>(_timeSlotBox);
     _breakConfigBoxInstance = await Hive.openBox<String>(_breakConfigBox);
     _timetableEntryBoxInstance = await Hive.openBox<String>(_timetableEntryBox);
@@ -77,12 +77,12 @@ class StorageService {
 
   /// Saves a subject to storage.
   Future<void> saveSubject(Subject subject) async {
-    await _subjectBoxInstance.put(subject.id, jsonEncode(subject.toJson()));
+    await _subjectBoxInstance.put(subject.code, jsonEncode(subject.toJson()));
   }
 
-  /// Gets a subject by ID.
-  Subject? getSubject(String id) {
-    final json = _subjectBoxInstance.get(id);
+  /// Gets a subject by code.
+  Subject? getSubject(String code) {
+    final json = _subjectBoxInstance.get(code);
     if (json == null) return null;
     return Subject.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
@@ -96,41 +96,41 @@ class StorageService {
         .toList();
   }
 
-  /// Deletes a subject by ID.
-  Future<void> deleteSubject(String id) async {
-    await _subjectBoxInstance.delete(id);
+  /// Deletes a subject by code.
+  Future<void> deleteSubject(String code) async {
+    await _subjectBoxInstance.delete(code);
   }
 
-  // ==================== ClassRoom ====================
+  // ==================== ClassSection ====================
 
-  /// Saves a class room to storage.
-  Future<void> saveClassRoom(ClassRoom classRoom) async {
-    await _classRoomBoxInstance.put(
-      classRoom.id,
-      jsonEncode(classRoom.toJson()),
+  /// Saves a class section to storage.
+  Future<void> saveClassSection(ClassSection classSection) async {
+    await _classSectionBoxInstance.put(
+      classSection.id,
+      jsonEncode(classSection.toJson()),
     );
   }
 
-  /// Gets a class room by ID.
-  ClassRoom? getClassRoom(String id) {
-    final json = _classRoomBoxInstance.get(id);
+  /// Gets a class section by ID.
+  ClassSection? getClassSection(String id) {
+    final json = _classSectionBoxInstance.get(id);
     if (json == null) return null;
-    return ClassRoom.fromJson(jsonDecode(json) as Map<String, dynamic>);
+    return ClassSection.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
 
-  /// Gets all class rooms.
-  List<ClassRoom> getAllClassRooms() {
-    return _classRoomBoxInstance.values
+  /// Gets all class sections.
+  List<ClassSection> getAllClassSections() {
+    return _classSectionBoxInstance.values
         .map(
           (json) =>
-              ClassRoom.fromJson(jsonDecode(json) as Map<String, dynamic>),
+              ClassSection.fromJson(jsonDecode(json) as Map<String, dynamic>),
         )
         .toList();
   }
 
-  /// Deletes a class room by ID.
-  Future<void> deleteClassRoom(String id) async {
-    await _classRoomBoxInstance.delete(id);
+  /// Deletes a class section by ID.
+  Future<void> deleteClassSection(String id) async {
+    await _classSectionBoxInstance.delete(id);
   }
 
   // ==================== TimeSlot ====================
@@ -200,6 +200,14 @@ class StorageService {
     await _timetableEntryBoxInstance.put(entry.id, jsonEncode(entry.toJson()));
   }
 
+  /// Saves multiple timetable entries at once.
+  Future<void> saveTimetableEntries(List<TimetableEntry> entries) async {
+    final Map<String, String> entriesMap = {
+      for (var entry in entries) entry.id: jsonEncode(entry.toJson())
+    };
+    await _timetableEntryBoxInstance.putAll(entriesMap);
+  }
+
   /// Gets a timetable entry by ID.
   TimetableEntry? getTimetableEntry(String id) {
     final json = _timetableEntryBoxInstance.get(id);
@@ -217,9 +225,44 @@ class StorageService {
         .toList();
   }
 
+  /// Gets all timetable entries for a specific class section.
+  List<TimetableEntry> getEntriesByClassSection(String classSectionId) {
+    return getAllTimetableEntries()
+        .where((entry) => entry.classSectionId == classSectionId)
+        .toList();
+  }
+
+  /// Gets all timetable entries for a specific faculty.
+  List<TimetableEntry> getEntriesByFaculty(String facultyId) {
+    return getAllTimetableEntries()
+        .where((entry) => entry.facultyId == facultyId)
+        .toList();
+  }
+
+  /// Gets all timetable entries for a specific subject.
+  List<TimetableEntry> getEntriesBySubject(String subjectCode) {
+    return getAllTimetableEntries()
+        .where((entry) => entry.subjectCode == subjectCode)
+        .toList();
+  }
+
   /// Deletes a timetable entry by ID.
   Future<void> deleteTimetableEntry(String id) async {
     await _timetableEntryBoxInstance.delete(id);
+  }
+
+  /// Deletes all entries for a specific class section.
+  Future<void> deleteEntriesByClassSection(String classSectionId) async {
+    final keysToDelete = _timetableEntryBoxInstance.values
+        .map(
+          (json) =>
+              TimetableEntry.fromJson(jsonDecode(json) as Map<String, dynamic>),
+        )
+        .where((entry) => entry.classSectionId == classSectionId)
+        .map((entry) => entry.id)
+        .toList();
+
+    await _timetableEntryBoxInstance.deleteAll(keysToDelete);
   }
 
   // ==================== DayTimetable ====================
@@ -283,11 +326,11 @@ class StorageService {
     await _timetableBoxInstance.delete(id);
   }
 
-  /// Gets a timetable by class room ID.
-  Timetable? getTimetableByClassRoom(String classRoomId) {
+  /// Gets a timetable by class section ID.
+  Timetable? getTimetableByClassSection(String classSectionId) {
     final allTimetables = getAllTimetables();
     try {
-      return allTimetables.firstWhere((t) => t.classRoomId == classRoomId);
+      return allTimetables.firstWhere((t) => t.classSectionId == classSectionId);
     } catch (_) {
       return null;
     }
@@ -299,7 +342,7 @@ class StorageService {
   Future<void> clearAll() async {
     await _facultyBoxInstance.clear();
     await _subjectBoxInstance.clear();
-    await _classRoomBoxInstance.clear();
+    await _classSectionBoxInstance.clear();
     await _timeSlotBoxInstance.clear();
     await _breakConfigBoxInstance.clear();
     await _timetableEntryBoxInstance.clear();
@@ -311,7 +354,7 @@ class StorageService {
   Future<void> close() async {
     await _facultyBoxInstance.close();
     await _subjectBoxInstance.close();
-    await _classRoomBoxInstance.close();
+    await _classSectionBoxInstance.close();
     await _timeSlotBoxInstance.close();
     await _breakConfigBoxInstance.close();
     await _timetableEntryBoxInstance.close();

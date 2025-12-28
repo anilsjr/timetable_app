@@ -43,9 +43,9 @@ class FacultyViewModel extends ChangeNotifier {
   }
 
   /// Gets subject names for given IDs.
-  List<String> getSubjectNames(List<String> subjectIds) {
-    return subjectIds.map((id) {
-      final subject = _subjects.where((s) => s.id == id).firstOrNull;
+  List<String> getSubjectNames(List<String> subjectCodes) {
+    return subjectCodes.map((code) {
+      final subject = _subjects.where((s) => s.code == code).firstOrNull;
       return subject?.name ?? 'Unknown';
     }).toList();
   }
@@ -53,9 +53,11 @@ class FacultyViewModel extends ChangeNotifier {
   /// Adds a new faculty.
   Future<bool> addFaculty({
     required String name,
-    required String email,
-    required String phone,
-    required List<String> subjectIds,
+    required String shortName,
+    required String computerCode,
+    String? email,
+    String? phone,
+    required List<String> subjectCodes,
     bool isActive = true,
   }) async {
     try {
@@ -63,9 +65,11 @@ class FacultyViewModel extends ChangeNotifier {
       final faculty = Faculty(
         id: id,
         name: name,
+        shortName: shortName,
+        computerCode: computerCode,
         email: email,
         phone: phone,
-        subjectIds: subjectIds,
+        subjectCodes: subjectCodes,
         isActive: isActive,
       );
 
@@ -83,18 +87,22 @@ class FacultyViewModel extends ChangeNotifier {
   Future<bool> updateFaculty({
     required String id,
     required String name,
-    required String email,
-    required String phone,
-    required List<String> subjectIds,
+    required String shortName,
+    required String computerCode,
+    String? email,
+    String? phone,
+    required List<String> subjectCodes,
     bool isActive = true,
   }) async {
     try {
       final faculty = Faculty(
         id: id,
         name: name,
+        shortName: shortName,
+        computerCode: computerCode,
         email: email,
         phone: phone,
-        subjectIds: subjectIds,
+        subjectCodes: subjectCodes,
         isActive: isActive,
       );
 

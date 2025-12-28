@@ -25,4 +25,14 @@ class DayTimetable {
       'entries': entries.map((entry) => entry.toJson()).toList(),
     };
   }
+
+  DayTimetable copyWith({
+    WeekDay? day,
+    List<TimetableEntry>? entries,
+  }) {
+    return DayTimetable(
+      day: day ?? this.day,
+      entries: entries ?? this.entries,
+    );
+  }
 }

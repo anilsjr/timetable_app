@@ -50,9 +50,11 @@ class _FacultyPageState extends State<FacultyPage> {
   Future<void> _showAddEditDialog({Faculty? faculty}) async {
     final isEditing = faculty != null;
     final nameController = TextEditingController(text: faculty?.name ?? '');
+    final shortNameController = TextEditingController(text: faculty?.shortName ?? '');
+    final computerCodeController = TextEditingController(text: faculty?.computerCode ?? '');
     final emailController = TextEditingController(text: faculty?.email ?? '');
     final phoneController = TextEditingController(text: faculty?.phone ?? '');
-    var selectedSubjectIds = List<String>.from(faculty?.subjectIds ?? []);
+    var selectedSubjectCodes = List<String>.from(faculty?.subjectCodes ?? []);
     var isActive = faculty?.isActive ?? true;
 
     final formKey = GlobalKey<FormState>();
@@ -77,7 +79,7 @@ class _FacultyPageState extends State<FacultyPage> {
                           controller: nameController,
                           decoration: const InputDecoration(
                             labelText: 'Name *',
-                            hintText: 'e.g., John Doe',
+                            hintText: 'e.g., Dr. Raj Kumar',
                             border: OutlineInputBorder(),
                           ),
                           textCapitalization: TextCapitalization.words,
@@ -89,22 +91,61 @@ class _FacultyPageState extends State<FacultyPage> {
                           },
                         ),
                         const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextFormField(
+                                controller: shortNameController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Short Name *',
+                                  hintText: 'e.g., RK',
+                                  border: OutlineInputBorder(),
+                                ),
+                                textCapitalization: TextCapitalization.characters,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: TextFormField(
+                                controller: computerCodeController,
+                                decoration: const InputDecoration(
+                                  labelText: 'Computer Code *',
+                                  hintText: 'e.g., FAC001',
+                                  border: OutlineInputBorder(),
+                                ),
+                                textCapitalization: TextCapitalization.characters,
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
                         TextFormField(
                           controller: emailController,
                           decoration: const InputDecoration(
-                            labelText: 'Email *',
-                            hintText: 'e.g., john@example.com',
+                            labelText: 'Email',
+                            hintText: 'e.g., raj.kumar@college.edu',
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.emailAddress,
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Email is required';
-                            }
-                            if (!RegExp(
-                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
-                            ).hasMatch(value)) {
-                              return 'Enter a valid email';
+                            if (value != null && value.trim().isNotEmpty) {
+                              if (!RegExp(
+                                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                              ).hasMatch(value)) {
+                                return 'Enter a valid email';
+                              }
                             }
                             return null;
                           },
@@ -113,17 +154,16 @@ class _FacultyPageState extends State<FacultyPage> {
                         TextFormField(
                           controller: phoneController,
                           decoration: const InputDecoration(
-                            labelText: 'Phone *',
+                            labelText: 'Phone',
                             hintText: 'e.g., 9876543210',
                             border: OutlineInputBorder(),
                           ),
                           keyboardType: TextInputType.phone,
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Phone is required';
-                            }
-                            if (value.trim().length < 10) {
-                              return 'Enter a valid phone number';
+                            if (value != null && value.trim().isNotEmpty) {
+                              if (value.trim().length < 10) {
+                                return 'Enter a valid phone number';
+                              }
                             }
                             return null;
                           },
@@ -131,9 +171,9 @@ class _FacultyPageState extends State<FacultyPage> {
                         const SizedBox(height: 16),
                         _SubjectMultiSelect(
                           subjects: _viewModel.subjects,
-                          selectedIds: selectedSubjectIds,
+                          selectedIds: selectedSubjectCodes,
                           onChanged: (ids) {
-                            setDialogState(() => selectedSubjectIds = ids);
+                            setDialogState(() => selectedSubjectCodes = ids);
                           },
                         ),
                         const SizedBox(height: 16),
@@ -178,6 +218,8 @@ class _FacultyPageState extends State<FacultyPage> {
     if (result != true) return;
 
     final name = nameController.text.trim();
+    final shortName = shortNameController.text.trim();
+    final computerCode = computerCodeController.text.trim();
     final email = emailController.text.trim();
     final phone = phoneController.text.trim();
 
@@ -186,9 +228,11 @@ class _FacultyPageState extends State<FacultyPage> {
       success = await _viewModel.updateFaculty(
         id: faculty.id,
         name: name,
-        email: email,
-        phone: phone,
-        subjectIds: selectedSubjectIds,
+        shortName: shortName,
+        computerCode: computerCode,
+        email: email.isEmpty ? null : email,
+        phone: phone.isEmpty ? null : phone,
+        subjectCodes: selectedSubjectCodes,
         isActive: isActive,
       );
       if (success) {
@@ -202,9 +246,11 @@ class _FacultyPageState extends State<FacultyPage> {
     } else {
       success = await _viewModel.addFaculty(
         name: name,
-        email: email,
-        phone: phone,
-        subjectIds: selectedSubjectIds,
+        shortName: shortName,
+        computerCode: computerCode,
+        email: email.isEmpty ? null : email,
+        phone: phone.isEmpty ? null : phone,
+        subjectCodes: selectedSubjectCodes,
         isActive: isActive,
       );
       if (success) {
@@ -296,7 +342,7 @@ class _FacultyPageState extends State<FacultyPage> {
         final faculty = _viewModel.faculties[index];
         return _FacultyCard(
           faculty: faculty,
-          subjectNames: _viewModel.getSubjectNames(faculty.subjectIds),
+          subjectNames: _viewModel.getSubjectNames(faculty.subjectCodes),
           onEdit: () => _showAddEditDialog(faculty: faculty),
           onDelete: () => _confirmDelete(faculty),
         );
@@ -349,7 +395,7 @@ class _SubjectMultiSelect extends StatelessWidget {
           ),
           child: Column(
             children: subjects.map((subject) {
-              final isSelected = selectedIds.contains(subject.id);
+              final isSelected = selectedIds.contains(subject.code);
               return CheckboxListTile(
                 title: Text(subject.name),
                 subtitle: Text(subject.code),
@@ -357,9 +403,9 @@ class _SubjectMultiSelect extends StatelessWidget {
                 onChanged: (checked) {
                   final newIds = List<String>.from(selectedIds);
                   if (checked == true) {
-                    newIds.add(subject.id);
+                    newIds.add(subject.code);
                   } else {
-                    newIds.remove(subject.id);
+                    newIds.remove(subject.code);
                   }
                   onChanged(newIds);
                 },
@@ -419,11 +465,25 @@ class _FacultyCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              faculty.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  faculty.name,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16,
+                                  ),
+                                ),
+                                Text(
+                                  '${faculty.shortName} | ${faculty.computerCode}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: colorScheme.primary,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           Container(
@@ -450,21 +510,23 @@ class _FacultyCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        faculty.email,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurfaceVariant,
+                      const SizedBox(height: 8),
+                      if (faculty.email != null && faculty.email!.isNotEmpty)
+                        Text(
+                          faculty.email!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
-                      Text(
-                        faculty.phone,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: colorScheme.onSurfaceVariant,
+                      if (faculty.phone != null && faculty.phone!.isNotEmpty)
+                        Text(
+                          faculty.phone!,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                 ),

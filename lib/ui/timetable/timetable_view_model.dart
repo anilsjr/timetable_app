@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-import '../../model/class_room.dart';
+import '../../model/class_section.dart';
 import '../../model/day_timetable.dart';
 import '../../model/enums.dart';
 import '../../model/faculty.dart';
@@ -22,8 +22,8 @@ class TimetableViewModel extends ChangeNotifier {
   List<Timetable> _timetables = [];
   List<Timetable> get timetables => _timetables;
 
-  List<ClassRoom> _classRooms = [];
-  List<ClassRoom> get classRooms => _classRooms;
+  List<ClassSection> _classSections = [];
+  List<ClassSection> get classSections => _classSections;
 
   List<Subject> _subjects = [];
   List<Subject> get subjects => _subjects;
@@ -31,8 +31,8 @@ class TimetableViewModel extends ChangeNotifier {
   List<Faculty> _faculties = [];
   List<Faculty> get faculties => _faculties;
 
-  ClassRoom? _selectedClassRoom;
-  ClassRoom? get selectedClassRoom => _selectedClassRoom;
+  ClassSection? _selectedClassSection;
+  ClassSection? get selectedClassSection => _selectedClassSection;
 
   Timetable? _currentTimetable;
   Timetable? get currentTimetable => _currentTimetable;
@@ -43,6 +43,85 @@ class TimetableViewModel extends ChangeNotifier {
   String? _errorMessage;
   String? get errorMessage => _errorMessage;
 
+  /// Standard time slots for the IPS Academy schedule.
+  static List<TimeSlot> get standardTimeSlots {
+    final now = DateTime.now();
+    DateTime t(int h, int m) => DateTime(now.year, now.month, now.day, h, m);
+
+    return [
+      TimeSlot(
+        id: 'slot_1',
+        startTime: t(9, 45),
+        endTime: t(10, 35),
+        type: SlotType.lecture,
+        durationMinutes: 50,
+      ),
+      TimeSlot(
+        id: 'slot_2',
+        startTime: t(10, 35),
+        endTime: t(11, 25),
+        type: SlotType.lecture,
+        durationMinutes: 50,
+      ),
+      TimeSlot(
+        id: 'slot_break_short',
+        startTime: t(11, 25),
+        endTime: t(11, 30),
+        type: SlotType.shortBreak,
+        durationMinutes: 5,
+      ),
+      TimeSlot(
+        id: 'slot_3',
+        startTime: t(11, 30),
+        endTime: t(12, 20),
+        type: SlotType.lecture,
+        durationMinutes: 50,
+      ),
+      TimeSlot(
+        id: 'slot_4',
+        startTime: t(12, 20),
+        endTime: t(13, 10),
+        type: SlotType.lecture,
+        durationMinutes: 50,
+      ),
+      TimeSlot(
+        id: 'slot_break_lunch',
+        startTime: t(13, 10),
+        endTime: t(13, 40),
+        type: SlotType.lunchBreak,
+        durationMinutes: 30,
+      ),
+      TimeSlot(
+        id: 'slot_5',
+        startTime: t(13, 40),
+        endTime: t(14, 30),
+        type: SlotType.lecture,
+        durationMinutes: 50,
+      ),
+      TimeSlot(
+        id: 'slot_6',
+        startTime: t(14, 30),
+        endTime: t(15, 20),
+        type: SlotType.lecture,
+        durationMinutes: 50,
+      ),
+      TimeSlot(
+        id: 'slot_7',
+        startTime: t(15, 20),
+        endTime: t(16, 5),
+        type: SlotType.lecture,
+        durationMinutes: 45,
+      ),
+      TimeSlot(
+        id: 'slot_8',
+        startTime: t(16, 5),
+        endTime: t(16, 50),
+        type: SlotType.lecture,
+        durationMinutes: 45,
+      ),
+    ];
+  }
+
   /// Loads all required data from storage.
   void loadData() {
     _isLoading = true;
@@ -51,18 +130,18 @@ class TimetableViewModel extends ChangeNotifier {
 
     try {
       _timetables = _storageService.getAllTimetables();
-      _classRooms = _storageService.getAllClassRooms();
+      _classSections = _storageService.getAllClassSections();
       _subjects = _storageService.getAllSubjects();
       _faculties = _storageService.getAllFaculties();
 
-      // Refresh selected class room instance if it exists
-      if (_selectedClassRoom != null) {
-        _selectedClassRoom = _classRooms
-            .where((c) => c.id == _selectedClassRoom!.id)
+      // Refresh selected class section instance if it exists
+      if (_selectedClassSection != null) {
+        _selectedClassSection = _classSections
+            .where((c) => c.id == _selectedClassSection!.id)
             .firstOrNull;
-        if (_selectedClassRoom != null) {
-          _currentTimetable = _storageService.getTimetableByClassRoom(
-            _selectedClassRoom!.id,
+        if (_selectedClassSection != null) {
+          _currentTimetable = _storageService.getTimetableByClassSection(
+            _selectedClassSection!.id,
           );
         } else {
           _currentTimetable = null;
@@ -76,21 +155,21 @@ class TimetableViewModel extends ChangeNotifier {
     }
   }
 
-  /// Selects a class room and loads its timetable.
-  void selectClassRoom(ClassRoom? classRoom) {
-    _selectedClassRoom = classRoom;
-    if (classRoom != null) {
-      _currentTimetable = _storageService.getTimetableByClassRoom(classRoom.id);
+  /// Selects a class section and loads its timetable.
+  void selectClassSection(ClassSection? classSection) {
+    _selectedClassSection = classSection;
+    if (classSection != null) {
+      _currentTimetable = _storageService.getTimetableByClassSection(classSection.id);
     } else {
       _currentTimetable = null;
     }
     notifyListeners();
   }
 
-  /// Gets subject by ID.
-  Subject? getSubject(String? id) {
-    if (id == null) return null;
-    return _subjects.where((s) => s.id == id).firstOrNull;
+  /// Gets subject by code.
+  Subject? getSubject(String? code) {
+    if (code == null) return null;
+    return _subjects.where((s) => s.code == code).firstOrNull;
   }
 
   /// Gets faculty by ID.
@@ -99,22 +178,69 @@ class TimetableViewModel extends ChangeNotifier {
     return _faculties.where((f) => f.id == id).firstOrNull;
   }
 
+  /// Gets an entry for a specific day and slot ID.
+  TimetableEntry? getEntry(WeekDay day, String timeSlotId) {
+    if (_currentTimetable == null) return null;
+    final dayTimetable = _currentTimetable!.weekTimetable
+        .where((dt) => dt.day == day)
+        .firstOrNull;
+    return dayTimetable?.entries
+        .where((e) => e.timeSlot.id == timeSlotId)
+        .firstOrNull;
+  }
+
+  /// Checks if a faculty is available at a specific day and time slot.
+  bool isFacultyAvailable(
+    String facultyId,
+    WeekDay day,
+    TimeSlot slot, {
+    String? excludeEntryId,
+  }) {
+    final allTimetables = _storageService.getAllTimetables();
+    for (final tt in allTimetables) {
+      for (final dt in tt.weekTimetable) {
+        if (dt.day == day) {
+          for (final entry in dt.entries) {
+            if (entry.id == excludeEntryId) continue;
+            if (entry.facultyId == facultyId) {
+              if (_doSlotsOverlap(entry.timeSlot, slot)) {
+                return false;
+              }
+            }
+          }
+        }
+      }
+    }
+    return true;
+  }
+
+  /// Checks if two time slots overlap.
+  bool _doSlotsOverlap(TimeSlot s1, TimeSlot s2) {
+    // Convert to minutes from start of day for comparison
+    final start1 = s1.startTime.hour * 60 + s1.startTime.minute;
+    final end1 = s1.endTime.hour * 60 + s1.endTime.minute;
+    final start2 = s2.startTime.hour * 60 + s2.startTime.minute;
+    final end2 = s2.endTime.hour * 60 + s2.endTime.minute;
+
+    return start1 < end2 && start2 < end1;
+  }
+
   /// Gets class room by ID.
-  ClassRoom? getClassRoom(String? id) {
-    if (id == null) return null;
-    return _classRooms.where((c) => c.id == id).firstOrNull;
+  ClassSection? getClassSection(String? fullId) {
+    if (fullId == null) return null;
+    return _classSections.where((c) => c.id == fullId).firstOrNull;
   }
 
   /// Gets active faculties for a subject.
-  List<Faculty> getFacultiesForSubject(String subjectId) {
+  List<Faculty> getFacultiesForSubject(String subjectCode) {
     return _faculties
-        .where((f) => f.isActive && f.subjectIds.contains(subjectId))
+        .where((f) => f.isActive && f.subjectCodes.contains(subjectCode))
         .toList();
   }
 
   /// Creates or updates a timetable for the selected class.
   Future<bool> saveTimetable(List<DayTimetable> weekTimetable) async {
-    if (_selectedClassRoom == null) {
+    if (_selectedClassSection == null) {
       _errorMessage = 'Please select a class first';
       notifyListeners();
       return false;
@@ -124,7 +250,7 @@ class TimetableViewModel extends ChangeNotifier {
       final now = DateTime.now();
       final timetable = Timetable(
         id: _currentTimetable?.id ?? now.millisecondsSinceEpoch.toString(),
-        classRoomId: _selectedClassRoom!.id,
+        classSectionId: _selectedClassSection!.id,
         weekTimetable: weekTimetable,
         createdAt: _currentTimetable?.createdAt ?? now,
         updatedAt: now,
@@ -143,10 +269,28 @@ class TimetableViewModel extends ChangeNotifier {
 
   /// Adds or updates an entry in the current timetable.
   Future<bool> saveEntry(TimetableEntry entry) async {
-    if (_selectedClassRoom == null) {
+    if (_selectedClassSection == null) {
       _errorMessage = 'Please select a class first';
       notifyListeners();
       return false;
+    }
+
+    // Validate faculty availability
+    if (entry.facultyId != null) {
+      final isAvailable = isFacultyAvailable(
+        entry.facultyId!,
+        entry.day,
+        entry.timeSlot,
+        excludeEntryId: entry.id,
+      );
+
+      if (!isAvailable) {
+        final faculty = getFaculty(entry.facultyId);
+        _errorMessage =
+            '${faculty?.name ?? "Faculty"} is already assigned to another class at this time.';
+        notifyListeners();
+        return false;
+      }
     }
 
     try {
@@ -243,6 +387,28 @@ class TimetableViewModel extends ChangeNotifier {
         .where((dt) => dt.day == day)
         .firstOrNull;
     return dayTimetable?.entries ?? [];
+  }
+
+  /// Gets a map of subject code to assigned faculty names for the current class.
+  Map<String, String> getSubjectFacultyMap() {
+    if (_currentTimetable == null) return {};
+
+    final Map<String, Set<String>> subjectToFaculties = {};
+
+    for (final dayTimetable in _currentTimetable!.weekTimetable) {
+      for (final entry in dayTimetable.entries) {
+        if (entry.subjectCode != null && entry.facultyId != null) {
+          final faculty = getFaculty(entry.facultyId);
+          if (faculty != null) {
+            subjectToFaculties
+                .putIfAbsent(entry.subjectCode!, () => {})
+                .add(faculty.name);
+          }
+        }
+      }
+    }
+
+    return subjectToFaculties.map((code, names) => MapEntry(code, names.join(', ')));
   }
 
   /// Creates a default time slot.

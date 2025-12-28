@@ -70,7 +70,7 @@ class _SubjectPageState extends State<SubjectPage> {
                       controller: nameController,
                       decoration: const InputDecoration(
                         labelText: 'Subject Name',
-                        hintText: 'e.g., Mathematics',
+                        hintText: 'e.g., Data Structures',
                         border: OutlineInputBorder(),
                       ),
                       textCapitalization: TextCapitalization.words,
@@ -80,7 +80,7 @@ class _SubjectPageState extends State<SubjectPage> {
                       controller: codeController,
                       decoration: const InputDecoration(
                         labelText: 'Subject Code',
-                        hintText: 'e.g., MATH101',
+                        hintText: 'e.g., CS201',
                         border: OutlineInputBorder(),
                       ),
                       textCapitalization: TextCapitalization.characters,
@@ -137,7 +137,6 @@ class _SubjectPageState extends State<SubjectPage> {
     bool success;
     if (isEditing) {
       success = await _viewModel.updateSubject(
-        id: subject.id,
         name: name,
         code: code,
         weeklyLectures: weeklyLectures,
@@ -190,7 +189,7 @@ class _SubjectPageState extends State<SubjectPage> {
 
     if (confirmed != true) return;
 
-    final success = await _viewModel.deleteSubject(subject.id);
+    final success = await _viewModel.deleteSubject(subject.code);
     if (success) {
       _showToast('Subject deleted successfully');
     } else {

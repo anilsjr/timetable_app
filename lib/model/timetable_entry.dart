@@ -5,9 +5,9 @@ class TimetableEntry {
   final String id;
   final WeekDay day;
   final TimeSlot timeSlot;
-  final String? subjectId;
+  final String? subjectCode;
   final String? facultyId;
-  final String? classRoomId;
+  final String? classSectionId;
   final SlotType slotType;
 
   const TimetableEntry({
@@ -15,9 +15,9 @@ class TimetableEntry {
     required this.day,
     required this.timeSlot,
     required this.slotType,
-    this.subjectId,
+    this.subjectCode,
     this.facultyId,
-    this.classRoomId,
+    this.classSectionId,
   });
 
   factory TimetableEntry.fromJson(Map<String, dynamic> json) {
@@ -26,9 +26,9 @@ class TimetableEntry {
       day: WeekDay.values.byName(json['day'] as String),
       timeSlot: TimeSlot.fromJson(json['timeSlot'] as Map<String, dynamic>),
       slotType: SlotType.values.byName(json['slotType'] as String),
-      subjectId: json['subjectId'] as String?,
+      subjectCode: json['subjectCode'] as String?,
       facultyId: json['facultyId'] as String?,
-      classRoomId: json['classRoomId'] as String?,
+      classSectionId: json['classSectionId'] as String?,
     );
   }
 
@@ -38,11 +38,32 @@ class TimetableEntry {
       'day': day.name,
       'timeSlot': timeSlot.toJson(),
       'slotType': slotType.name,
-      'subjectId': subjectId,
+      'subjectCode': subjectCode,
       'facultyId': facultyId,
-      'classRoomId': classRoomId,
+      'classSectionId': classSectionId,
     };
   }
+
+  TimetableEntry copyWith({
+    String? id,
+    WeekDay? day,
+    TimeSlot? timeSlot,
+    String? subjectCode,
+    String? facultyId,
+    String? classSectionId,
+    SlotType? slotType,
+  }) {
+    return TimetableEntry(
+      id: id ?? this.id,
+      day: day ?? this.day,
+      timeSlot: timeSlot ?? this.timeSlot,
+      subjectCode: subjectCode ?? this.subjectCode,
+      facultyId: facultyId ?? this.facultyId,
+      classSectionId: classSectionId ?? this.classSectionId,
+      slotType: slotType ?? this.slotType,
+    );
+  }
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -51,4 +72,5 @@ class TimetableEntry {
           id == other.id;
 
   @override
-  int get hashCode => id.hashCode;}
+  int get hashCode => id.hashCode;
+}

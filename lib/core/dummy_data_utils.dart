@@ -1,4 +1,4 @@
-import '../model/class_room.dart';
+import '../model/class_section.dart';
 import '../model/faculty.dart';
 import '../model/subject.dart';
 import '../service/storage_service.dart';
@@ -25,9 +25,9 @@ class DummyDataUtils {
       }
 
       // Create 10 classes
-      final classRooms = _createClassRooms(subjects);
-      for (final classRoom in classRooms) {
-        await storageService.saveClassRoom(classRoom);
+      final ClassSections = _createClassSections(subjects);
+      for (final ClassSection in ClassSections) {
+        await storageService.saveClassSection(ClassSection);
       }
 
       return true;
@@ -36,279 +36,352 @@ class DummyDataUtils {
     }
   }
 
-  /// Creates 6 dummy subjects.
+  /// Creates dummy subjects based on IPS Academy curriculum.
   static List<Subject> _createSubjects() {
     return [
-      const Subject(
-        id: 'sub_001',
-        name: 'Mathematics',
-        code: 'MATH101',
-        weeklyLectures: 4,
-        isLab: false,
-      ),
-      const Subject(
-        id: 'sub_002',
-        name: 'Physics',
-        code: 'PHY102',
-        weeklyLectures: 4,
-        isLab: true,
-      ),
-      const Subject(
-        id: 'sub_003',
-        name: 'Chemistry',
-        code: 'CHEM103',
-        weeklyLectures: 3,
-        isLab: true,
-      ),
-      const Subject(
-        id: 'sub_004',
-        name: 'English',
-        code: 'ENG104',
-        weeklyLectures: 3,
-        isLab: false,
-      ),
-      const Subject(
-        id: 'sub_005',
-        name: 'History',
-        code: 'HIST105',
-        weeklyLectures: 2,
-        isLab: false,
-      ),
-      const Subject(
-        id: 'sub_006',
-        name: 'Computer Science',
-        code: 'CS106',
-        weeklyLectures: 5,
-        isLab: true,
-      ),
+      // 1st Year (Common)
+      const Subject(name: 'Engineering Physics', code: 'BT101', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Engineering Chemistry', code: 'BT102', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Mathematics-I', code: 'BT103', weeklyLectures: 4, isLab: false),
+      const Subject(name: 'Basic Electrical & Electronics', code: 'BT104', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Engineering Graphics', code: 'BT105', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Basic Computer Engineering', code: 'BT106', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Professional Communication', code: 'BT107', weeklyLectures: 2, isLab: false),
+      const Subject(name: 'Workshop Practice', code: 'BT108', weeklyLectures: 2, isLab: true),
+
+      // 2nd Year (CSE/AIML)
+      const Subject(name: 'Mathematics-III', code: 'CS201', weeklyLectures: 4, isLab: false),
+      const Subject(name: 'Data Structures & Algorithms', code: 'CS202', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Object Oriented Programming', code: 'CS203', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Digital Logic Design', code: 'CS204', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Computer Organization & Architecture', code: 'CS205', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Analysis & Design of Algorithms', code: 'CS206', weeklyLectures: 4, isLab: false),
+      const Subject(name: 'Operating Systems', code: 'CS207', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Software Engineering', code: 'CS208', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Database Management Systems', code: 'CS209', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Python Programming', code: 'CS210', weeklyLectures: 3, isLab: true),
+
+      // 3rd Year (CSE/AIML)
+      const Subject(name: 'Theory of Computation', code: 'CS301', weeklyLectures: 4, isLab: false),
+      const Subject(name: 'Computer Networks', code: 'CS302', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Machine Learning', code: 'CS303', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Artificial Intelligence', code: 'CS304', weeklyLectures: 4, isLab: false),
+      const Subject(name: 'Web Technology', code: 'CS305', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Compiler Design', code: 'CS306', weeklyLectures: 4, isLab: false),
+      const Subject(name: 'Data Science', code: 'CS307', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Cloud Computing', code: 'CS308', weeklyLectures: 3, isLab: false),
+
+      // 4th Year (CSE/AIML)
+      const Subject(name: 'Deep Learning', code: 'CS401', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Big Data Analytics', code: 'CS402', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Information Security', code: 'CS403', weeklyLectures: 3, isLab: false),
+
+      // Fire Technology
+      const Subject(name: 'Fire Physics & Chemistry', code: 'FT201', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'Rescue Equipment & Techniques', code: 'FT202', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Hydraulics in Fire Service', code: 'FT203', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Town Planning & Building Safety', code: 'FT301', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Industrial Safety Management', code: 'FT302', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Fire Fighting Practices', code: 'FT303', weeklyLectures: 4, isLab: true),
+      const Subject(name: 'First Aid & Emergency Care', code: 'FT401', weeklyLectures: 2, isLab: true),
+      const Subject(name: 'Disaster Management', code: 'FT402', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Spoken Tutorial', code: 'SS001', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Innternship-I', code: 'IP001', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Innternship-II', code: 'IP002', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Expert Lecture', code: 'EP001', weeklyLectures: 3, isLab: false),
     ];
   }
 
-  /// Creates 12 dummy faculty members.
+  /// Creates dummy faculty members.
   static List<Faculty> _createFaculties(List<Subject> subjects) {
     return [
       Faculty(
         id: 'fac_001',
         name: 'Dr. Raj Kumar',
-        email: 'raj.kumar@school.com',
+        shortName: 'RK',
+        computerCode: 'FAC001',
+        email: 'raj.kumar@college.edu',
         phone: '9876543210',
-        subjectIds: [subjects[0].id], // Mathematics
+        subjectCodes: ['CS202', 'CS206'], // DSA, ADA
         isActive: true,
       ),
       Faculty(
         id: 'fac_002',
         name: 'Prof. Priya Sharma',
-        email: 'priya.sharma@school.com',
+        shortName: 'PS',
+        computerCode: 'FAC002',
+        email: 'priya.sharma@college.edu',
         phone: '9876543211',
-        subjectIds: [subjects[0].id], // Mathematics
+        subjectCodes: ['CS202', 'CS210'], // DSA, Python
         isActive: true,
       ),
       Faculty(
         id: 'fac_003',
         name: 'Dr. Vikram Singh',
-        email: 'vikram.singh@school.com',
+        shortName: 'VS',
+        computerCode: 'FAC003',
+        email: 'vikram.singh@college.edu',
         phone: '9876543212',
-        subjectIds: [subjects[1].id], // Physics
+        subjectCodes: ['CS303', 'CS304', 'CS401'], // ML, AI, DL
         isActive: true,
       ),
       Faculty(
         id: 'fac_004',
         name: 'Prof. Neha Patel',
-        email: 'neha.patel@school.com',
+        shortName: 'NP',
+        computerCode: 'FAC004',
+        email: 'neha.patel@college.edu',
         phone: '9876543213',
-        subjectIds: [subjects[1].id], // Physics
+        subjectCodes: ['BT103', 'CS201'], // Math-I, Math-III
         isActive: true,
       ),
       Faculty(
         id: 'fac_005',
         name: 'Dr. Arjun Reddy',
-        email: 'arjun.reddy@school.com',
+        shortName: 'AR',
+        computerCode: 'FAC005',
+        email: 'arjun.reddy@college.edu',
         phone: '9876543214',
-        subjectIds: [subjects[2].id], // Chemistry
+        subjectCodes: ['CS207', 'CS209'], // OS, DBMS
         isActive: true,
       ),
       Faculty(
         id: 'fac_006',
         name: 'Prof. Anjali Verma',
-        email: 'anjali.verma@school.com',
+        shortName: 'AV',
+        computerCode: 'FAC006',
+        email: 'anjali.verma@college.edu',
         phone: '9876543215',
-        subjectIds: [subjects[2].id], // Chemistry
+        subjectCodes: ['CS302', 'CS403'], // CN, Info Security
         isActive: true,
       ),
       Faculty(
         id: 'fac_007',
         name: 'Dr. Ravi Nair',
-        email: 'ravi.nair@school.com',
+        shortName: 'RN',
+        computerCode: 'FAC007',
+        email: 'ravi.nair@college.edu',
         phone: '9876543216',
-        subjectIds: [subjects[3].id], // English
+        subjectCodes: ['FT201', 'FT303'], // Fire Physics, Fire Fighting
         isActive: true,
       ),
       Faculty(
         id: 'fac_008',
         name: 'Prof. Divya Kumar',
-        email: 'divya.kumar@school.com',
+        shortName: 'DK',
+        computerCode: 'FAC008',
+        email: 'divya.kumar@college.edu',
         phone: '9876543217',
-        subjectIds: [subjects[3].id, subjects[4].id], // English, History
+        subjectCodes: ['FT302', 'FT402'], // Industrial Safety, Disaster Mgmt
         isActive: true,
       ),
       Faculty(
         id: 'fac_009',
         name: 'Dr. Sanjay Rao',
-        email: 'sanjay.rao@school.com',
+        shortName: 'SR',
+        computerCode: 'FAC009',
+        email: 'sanjay.rao@college.edu',
         phone: '9876543218',
-        subjectIds: [subjects[4].id], // History
+        subjectCodes: ['BT101', 'BT102'], // Physics, Chemistry
         isActive: true,
       ),
       Faculty(
         id: 'fac_010',
         name: 'Prof. Akshara Singh',
-        email: 'akshara.singh@school.com',
+        shortName: 'AS',
+        computerCode: 'FAC010',
+        email: 'akshara.singh@college.edu',
         phone: '9876543219',
-        subjectIds: [subjects[5].id], // Computer Science
+        subjectCodes: ['CS305', 'CS307'], // Web Tech, Data Science
         isActive: true,
       ),
       Faculty(
         id: 'fac_011',
         name: 'Dr. Rohit Sharma',
-        email: 'rohit.sharma@school.com',
+        shortName: 'RS',
+        computerCode: 'FAC011',
+        email: 'rohit.sharma@college.edu',
         phone: '9876543220',
-        subjectIds: [subjects[5].id], // Computer Science
+        subjectCodes: ['CS204', 'CS205'], // DLD, COA
         isActive: true,
       ),
       Faculty(
         id: 'fac_012',
         name: 'Prof. Meera Desai',
-        email: 'meera.desai@school.com',
-        phone: '9876543221',
-        subjectIds: [subjects[5].id], // Computer Science
+        shortName: 'MD',
+        computerCode: 'FAC012',
+        email: null,
+        phone: null,
+        subjectCodes: ['BT107', 'BT108'], // Communication, Workshop
         isActive: false,
       ),
     ];
   }
 
-  /// Creates 10 dummy class rooms.
-  static List<ClassRoom> _createClassRooms(List<Subject> subjects) {
+  /// Returns a comprehensive list of all class sections.
+  static List<ClassSection> getAllClassSections() {
     return [
-      ClassRoom(
-        id: 'class_001',
-        className: '10th Grade',
-        section: 'A',
-        studentCount: 40,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[3].id,
-        ], // Math, Physics, Chemistry, English
-      ),
-      ClassRoom(
-        id: 'class_002',
-        className: '10th Grade',
-        section: 'B',
-        studentCount: 38,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[3].id,
-        ],
-      ),
-      ClassRoom(
-        id: 'class_003',
-        className: '10th Grade',
-        section: 'C',
-        studentCount: 42,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[4].id,
-        ], // Math, Physics, Chemistry, History
-      ),
-      ClassRoom(
-        id: 'class_004',
-        className: '11th Grade',
-        section: 'A',
-        studentCount: 35,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[5].id,
-        ], // Math, Physics, Chemistry, CS
-      ),
-      ClassRoom(
-        id: 'class_005',
-        className: '11th Grade',
-        section: 'B',
-        studentCount: 37,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[5].id,
-        ], // Math, Physics, CS
-      ),
-      ClassRoom(
-        id: 'class_006',
-        className: '12th Grade',
-        section: 'A',
-        studentCount: 39,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[5].id,
-        ], // Math, Physics, Chemistry, CS
-      ),
-      ClassRoom(
-        id: 'class_007',
-        className: '12th Grade',
-        section: 'B',
-        studentCount: 36,
-        subjectIds: [
-          subjects[0].id,
-          subjects[3].id,
-          subjects[4].id,
-          subjects[5].id,
-        ], // Math, English, History, CS
-      ),
-      ClassRoom(
-        id: 'class_008',
-        className: '9th Grade',
-        section: 'A',
-        studentCount: 45,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[3].id,
-          subjects[4].id,
-        ], // Math, Physics, English, History
-      ),
-      ClassRoom(
-        id: 'class_009',
-        className: '9th Grade',
-        section: 'B',
-        studentCount: 43,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[3].id,
-        ],
-      ),
-      ClassRoom(
-        id: 'class_010',
-        className: '8th Grade',
-        section: 'A',
-        studentCount: 44,
-        subjectIds: [
-          subjects[0].id,
-          subjects[1].id,
-          subjects[2].id,
-          subjects[3].id,
-          subjects[4].id,
-        ], // All except CS
-      ),
+      // ==========================================
+      // 1. CSE CORE (Computer Science & Engineering)
+      // ==========================================
+      // 1st Year
+      ClassSection.fromId("CSE-1"),
+      ClassSection.fromId("CSE-2"),
+      // 2nd Year
+      ClassSection.fromId("CSE-S1"),
+      ClassSection.fromId("CSE-S2"),
+      // 3rd Year
+      ClassSection.fromId("CSE-T1"),
+      ClassSection.fromId("CSE-T2"),
+      // 4th Year (Final)
+      ClassSection.fromId("CSE-F1"),
+      ClassSection.fromId("CSE-F2"),
+
+      // ==========================================
+      // 2. CSE - AIML (AI & Machine Learning)
+      // ==========================================
+      // 1st Year
+      ClassSection.fromId("CSE-AIML-1"),
+      ClassSection.fromId("CSE-AIML-2"),
+      // 2nd Year
+      ClassSection.fromId("CSE-AIML-S1"),
+      ClassSection.fromId("CSE-AIML-S2"),
+      // 3rd Year
+      ClassSection.fromId("CSE-AIML-T1"),
+      ClassSection.fromId("CSE-AIML-T2"),
+      // 4th Year
+      ClassSection.fromId("CSE-AIML-F1"),
+
+      // ==========================================
+      // 3. CSE - DATA SCIENCE (DS)
+      // ==========================================
+      // 1st Year
+      ClassSection.fromId("CSE-DS-1"),
+      ClassSection.fromId("CSE-DS-2"),
+      // 2nd Year
+      ClassSection.fromId("CSE-DS-S1"),
+      ClassSection.fromId("CSE-DS-S2"),
+      // 3rd Year
+      ClassSection.fromId("CSE-DS-T1"),
+      // 4th Year
+      ClassSection.fromId("CSE-DS-F1"),
+
+      // ==========================================
+      // 4. CSIT (Computer Science & IT)
+      // ==========================================
+      ClassSection.fromId("CSIT-1"),
+      ClassSection.fromId("CSIT-S1"),
+      ClassSection.fromId("CSIT-T1"),
+      ClassSection.fromId("CSIT-F1"),
+
+      // ==========================================
+      // 5. IT (Information Technology)
+      // ==========================================
+      ClassSection.fromId("IT-1"),
+      ClassSection.fromId("IT-S1"),
+      ClassSection.fromId("IT-T1"),
+      ClassSection.fromId("IT-F1"),
+
+      // ==========================================
+      // 6. FIRE TECH (FT - Flagship Course)
+      // ==========================================
+      ClassSection.fromId("FT-1"),
+      ClassSection.fromId("FT-2"),
+      ClassSection.fromId("FT-S1"),
+      ClassSection.fromId("FT-T1"),
+      ClassSection.fromId("FT-F1"),
+
+      // ==========================================
+      // 7. IoT & CYBER SECURITY (CSE-IoT)
+      // ==========================================
+      ClassSection.fromId("CSE-IOT-1"),
+      ClassSection.fromId("CSE-IOT-S1"),
+      ClassSection.fromId("CSE-IOT-T1"),
+    ];
+  }
+
+  /// Creates dummy class sections.
+  static List<ClassSection> _createClassSections(List<Subject> subjects) {
+    return [
+      // ==========================================
+      // 1. CSE CORE (Computer Science & Engineering)
+      // ==========================================
+      // 1st Year
+      ClassSection.fromId("CSE-1",
+          studentCount: 60,
+          subjectCodes: ['BT101', 'BT103', 'BT104', 'BT106'],
+          coordinators: ['Dr. Raj Kumar']),
+      ClassSection.fromId("CSE-2",
+          studentCount: 58,
+          subjectCodes: ['BT101', 'BT103', 'BT104', 'BT106'],
+          coordinators: ['Dr. Raj Kumar']),
+      // 2nd Year
+      ClassSection.fromId("CSE-S1",
+          studentCount: 62,
+          subjectCodes: ['CS201', 'CS202', 'CS203', 'CS204', 'CS205'],
+          coordinators: ['Dr. Amit Jain']),
+      ClassSection.fromId("CSE-S2",
+          studentCount: 55,
+          subjectCodes: ['CS201', 'CS202', 'CS203', 'CS204', 'CS205'],
+          coordinators: ['Dr. Amit Jain']),
+      // 3rd Year
+      ClassSection.fromId("CSE-T1",
+          studentCount: 57,
+          subjectCodes: ['CS301', 'CS302', 'CS304', 'CS305', 'CS306'],
+          coordinators: ['Dr. Sneha Gupta']),
+      ClassSection.fromId("CSE-T2",
+          studentCount: 59,
+          subjectCodes: ['CS301', 'CS302', 'CS304', 'CS305', 'CS306'],
+          coordinators: ['Dr. Sneha Gupta']),
+      // 4th Year (Final)
+      ClassSection.fromId("CSE-F1",
+          studentCount: 56,
+          subjectCodes: ['CS402', 'CS403'],
+          coordinators: ['Dr. Raj Kumar']),
+
+      // ==========================================
+      // 2. CSE - AIML (AI & Machine Learning)
+      // ==========================================
+      // 1st Year
+      ClassSection.fromId("CSE-AIML-1",
+          studentCount: 60,
+          subjectCodes: ['BT101', 'BT103', 'BT104', 'BT106'],
+          coordinators: ['Dr. Raj Kumar']),
+      // 2nd Year
+      ClassSection.fromId("CSE-AIML-S1",
+          studentCount: 62,
+          subjectCodes: ['CS201', 'CS202', 'CS203', 'CS207', 'CS209'],
+          coordinators: ['Dr. Amit Jain']),
+      // 3rd Year
+      ClassSection.fromId("CSE-AIML-T1",
+          studentCount: 57,
+          subjectCodes: ['CS302', 'CS303', 'CS304', 'CS305', 'CS307'],
+          coordinators: ['Dr. Sneha Gupta']),
+      // 4th Year
+      ClassSection.fromId("CSE-AIML-F1",
+          studentCount: 56,
+          subjectCodes: ['CS401', 'CS402'],
+          coordinators: ['Dr. Raj Kumar']),
+
+      // ==========================================
+      // 6. FIRE TECH (FT - Flagship Course)
+      // ==========================================
+      ClassSection.fromId("FT-1",
+          studentCount: 60,
+          subjectCodes: ['BT101', 'BT102', 'BT103', 'BT105'],
+          coordinators: ['Dr. Raj Kumar']),
+      ClassSection.fromId("FT-S1",
+          studentCount: 62,
+          subjectCodes: ['FT201', 'FT202', 'FT203'],
+          coordinators: ['Dr. Amit Jain']),
+      ClassSection.fromId("FT-T1",
+          studentCount: 57,
+          subjectCodes: ['FT301', 'FT302', 'FT303'],
+          coordinators: ['Dr. Sneha Gupta']),
+      ClassSection.fromId("FT-F1",
+          studentCount: 56,
+          subjectCodes: ['FT401', 'FT402'],
+          coordinators: ['Dr. Raj Kumar']),
     ];
   }
 }
