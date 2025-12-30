@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:time_table_manager/domain/repo/faculty_repository.dart';
 
 import '../../model/faculty.dart';
 import '../../model/subject.dart';
@@ -17,10 +18,10 @@ class FacultyPage extends StatefulWidget {
 class _FacultyPageState extends State<FacultyPage> {
   late final FacultyViewModel _viewModel;
 
-  @override
+   @override
   void initState() {
     super.initState();
-    _viewModel = FacultyViewModel(storageService: widget.storageService);
+    _viewModel = FacultyViewModel(facultyRepository: widget.facultyRepository);
     _viewModel.addListener(_onViewModelChange);
   }
 

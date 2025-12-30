@@ -3,7 +3,6 @@ import '../../model/class_section.dart';
 import '../../model/subject.dart';
 import '../../service/storage_service.dart';
 
-/// Concrete implementation of [ClassSectionRepository] using [StorageService].
 class ClassSectionRepositoryImpl implements ClassSectionRepository {
   ClassSectionRepositoryImpl({required StorageService storageService})
       : _storageService = storageService;
@@ -12,7 +11,7 @@ class ClassSectionRepositoryImpl implements ClassSectionRepository {
 
   @override
   void loadClassSections() {
-    _storageService. getAllClassSections();
+    _storageService.getAllClassSections();
   }
 
   @override
@@ -22,12 +21,15 @@ class ClassSectionRepositoryImpl implements ClassSectionRepository {
 
   @override
   List<Subject> getAllSubjects() {
-    return _storageService. getAllSubjects();
+    return _storage_service_getAllSubjects();
   }
 
+  // Helper to avoid analyzer warning if service method changed name
+  List<Subject> _storage_service_getAllSubjects() => _storageService.getAllSubjects();
+
   @override
-  ClassSection?  getClassSection(String id) {
-    return _storageService. getClassSection(id);
+  ClassSection? getClassSection(String id) {
+    return _storageService.getClassSection(id);
   }
 
   @override
@@ -37,7 +39,7 @@ class ClassSectionRepositoryImpl implements ClassSectionRepository {
     required List<String> subjectCodes,
   }) async {
     try {
-      final classSection = ClassSection. fromId(
+      final classSection = ClassSection.fromId(
         id,
         studentCount: studentCount,
         subjectCodes: subjectCodes,
