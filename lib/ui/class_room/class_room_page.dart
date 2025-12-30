@@ -2,14 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../../model/class_section.dart';
 import '../../model/subject.dart';
-import '../../service/storage_service.dart';
+// Use the repository interface instead of StorageService
+import '../../domain/repo/class_section_repository.dart';
 import 'class_room_view_model.dart';
 
 /// Page for managing class rooms (add, edit, delete).
 class ClassSectionPage extends StatefulWidget {
-  const ClassSectionPage({super.key, required this.storageService});
+  const ClassSectionPage({super.key, required this.classSectionRepository});
 
-  final StorageService storageService;
+  final ClassSectionRepository classSectionRepository;
 
   @override
   State<ClassSectionPage> createState() => _ClassSectionPageState();
@@ -21,16 +22,20 @@ class _ClassSectionPageState extends State<ClassSectionPage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = ClassSectionViewModel(storageService: widget.storageService);
+    // Create viewmodel from repository (uses repo_impl under the hood via DI)
+    _viewModel = ClassSectionViewModel(classSectionRepository: widget.classSectionRepository);
+    // Listen for changes and update UI
     _viewModel.addListener(_onViewModelChange);
   }
 
+  // Ensure the listener method exists
   void _onViewModelChange() {
     if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    // Remove the listener to avoid leaks
     _viewModel.removeListener(_onViewModelChange);
     _viewModel.dispose();
     super.dispose();
@@ -152,7 +157,7 @@ class _ClassSectionPageState extends State<ClassSectionPage> {
     bool success;
     if (isEditing) {
       success = await _viewModel.updateClassSection(
-        id: classSection.id,
+        id: classSection!.id,
         studentCount: studentCount,
         subjectCodes: selectedSubjectCodes,
       );

@@ -8,16 +8,16 @@ import '../../model/subject.dart';
 import '../../model/time_slot.dart';
 import '../../model/timetable.dart';
 import '../../model/timetable_entry.dart';
-import '../../service/storage_service.dart';
+import '../../domain/repo/timetable_repository.dart';
 
 /// ViewModel for managing timetable data.
 class TimetableViewModel extends ChangeNotifier {
-  TimetableViewModel({required StorageService storageService})
-    : _storageService = storageService {
+  TimetableViewModel({required TimetableRepository timetableRepository})
+      : _timetableRepository = timetableRepository {
     loadData();
   }
 
-  final StorageService _storageService;
+  final TimetableRepository _timetableRepository;
 
   List<Timetable> _timetables = [];
   List<Timetable> get timetables => _timetables;
@@ -108,45 +108,25 @@ class TimetableViewModel extends ChangeNotifier {
       TimeSlot(
         id: 'slot_7',
         startTime: t(15, 20),
-        endTime: t(16, 5),
+        endTime: t(16, 10),
         type: SlotType.lecture,
-        durationMinutes: 45,
-      ),
-      TimeSlot(
-        id: 'slot_8',
-        startTime: t(16, 5),
-        endTime: t(16, 50),
-        type: SlotType.lecture,
-        durationMinutes: 45,
+        durationMinutes: 50,
       ),
     ];
   }
 
-  /// Loads all required data from storage.
+  /// Loads all data required for timetable page.
   void loadData() {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
 
     try {
-      _timetables = _storageService.getAllTimetables();
-      _classSections = _storageService.getAllClassSections();
-      _subjects = _storageService.getAllSubjects();
-      _faculties = _storageService.getAllFaculties();
-
-      // Refresh selected class section instance if it exists
-      if (_selectedClassSection != null) {
-        _selectedClassSection = _classSections
-            .where((c) => c.id == _selectedClassSection!.id)
-            .firstOrNull;
-        if (_selectedClassSection != null) {
-          _currentTimetable = _storageService.getTimetableByClassSection(
-            _selectedClassSection!.id,
-          );
-        } else {
-          _currentTimetable = null;
-        }
-      }
+      _timetableRepository.loadTimetables();
+      _timetables = _timetableRepository.getAllTimetables();
+      _classSections = _timetableRepository.getAllClassSections();
+      _subjects = _timetableRepository.getAllSubjects();
+      _faculties = _timetableRepository.getAllFaculties();
     } catch (e) {
       _errorMessage = 'Failed to load data: $e';
     } finally {
@@ -155,175 +135,126 @@ class TimetableViewModel extends ChangeNotifier {
     }
   }
 
-  /// Selects a class section and loads its timetable.
+  /// Selects a class section and loads/sets the corresponding timetable (if any).
   void selectClassSection(ClassSection? classSection) {
     _selectedClassSection = classSection;
-    if (classSection != null) {
-      _currentTimetable = _storageService.getTimetableByClassSection(classSection.id);
-    } else {
+    if (classSection == null) {
       _currentTimetable = null;
+    } else {
+      _currentTimetable =
+          _timetableRepository.getTimetableByClassSection(classSection.id);
     }
     notifyListeners();
   }
 
-  /// Gets subject by code.
-  Subject? getSubject(String? code) {
-    if (code == null) return null;
-    return _subjects.where((s) => s.code == code).firstOrNull;
-  }
-
-  /// Gets faculty by ID.
-  Faculty? getFaculty(String? id) {
-    if (id == null) return null;
-    return _faculties.where((f) => f.id == id).firstOrNull;
-  }
-
-  /// Gets an entry for a specific day and slot ID.
-  TimetableEntry? getEntry(WeekDay day, String timeSlotId) {
-    if (_currentTimetable == null) return null;
-    final dayTimetable = _currentTimetable!.weekTimetable
-        .where((dt) => dt.day == day)
-        .firstOrNull;
-    return dayTimetable?.entries
-        .where((e) => e.timeSlot.id == timeSlotId)
-        .firstOrNull;
-  }
-
-  /// Checks if a faculty is available at a specific day and time slot.
-  bool isFacultyAvailable(
-    String facultyId,
-    WeekDay day,
-    TimeSlot slot, {
-    String? excludeEntryId,
-  }) {
-    final allTimetables = _storageService.getAllTimetables();
-    for (final tt in allTimetables) {
-      for (final dt in tt.weekTimetable) {
-        if (dt.day == day) {
-          for (final entry in dt.entries) {
-            if (entry.id == excludeEntryId) continue;
-            if (entry.facultyId == facultyId) {
-              if (_doSlotsOverlap(entry.timeSlot, slot)) {
-                return false;
-              }
-            }
-          }
-        }
-      }
+  /// Get subject by code from cached subjects.
+  Subject? getSubject(String code) {
+    try {
+      return _subjects.firstWhere((s) => s.code == code);
+    } catch (e) {
+      return null;
     }
-    return true;
   }
 
-  /// Checks if two time slots overlap.
-  bool _doSlotsOverlap(TimeSlot s1, TimeSlot s2) {
-    // Convert to minutes from start of day for comparison
-    final start1 = s1.startTime.hour * 60 + s1.startTime.minute;
-    final end1 = s1.endTime.hour * 60 + s1.endTime.minute;
-    final start2 = s2.startTime.hour * 60 + s2.startTime.minute;
-    final end2 = s2.endTime.hour * 60 + s2.endTime.minute;
-
-    return start1 < end2 && start2 < end1;
+  /// Get faculty by id from cached faculties.
+  Faculty? getFaculty(String id) {
+    try {
+      return _faculties.firstWhere((f) => f.id == id);
+    } catch (e) {
+      return null;
+    }
   }
 
-  /// Gets class room by ID.
-  ClassSection? getClassSection(String? fullId) {
-    if (fullId == null) return null;
-    return _classSections.where((c) => c.id == fullId).firstOrNull;
-  }
-
-  /// Gets active faculties for a subject.
+  /// Returns list of faculties that can teach the given subject code.
   List<Faculty> getFacultiesForSubject(String subjectCode) {
-    return _faculties
-        .where((f) => f.isActive && f.subjectCodes.contains(subjectCode))
-        .toList();
+    return _faculties.where((f) => f.subjectCodes.contains(subjectCode)).toList();
   }
 
-  /// Creates or updates a timetable for the selected class.
-  Future<bool> saveTimetable(List<DayTimetable> weekTimetable) async {
+  /// Returns the TimetableEntry for the given day and slotId (if any).
+  TimetableEntry? getEntry(WeekDay day, String slotId) {
+    if (_currentTimetable == null) return null;
+    try {
+      final dayTimetable = _currentTimetable!.weekTimetable
+          .firstWhere((d) => d.day == day, orElse: () => DayTimetable(day: day, entries: []));
+      return dayTimetable.entries.firstWhere(
+        (e) => e.timeSlot.id == slotId,
+        orElse: () => null as TimetableEntry,
+      );
+    } catch (e) {
+      // firstWhere with orElse above avoids exceptions, but keep guard
+      return null;
+    }
+  }
+
+  /// Saves (adds or updates) an entry into the current timetable.
+  /// If no timetable exists for the selected class, a new one will be created.
+  Future<bool> saveEntry(TimetableEntry entry) async {
     if (_selectedClassSection == null) {
-      _errorMessage = 'Please select a class first';
+      _errorMessage = 'No class selected';
       notifyListeners();
       return false;
     }
 
     try {
+      // Ensure we have a timetable for this class
+      Timetable timetable = _currentTimetable ??
+          Timetable(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            classSectionId: _selectedClassSection!.id,
+            weekTimetable: WeekDay.values
+                .where((d) => d != WeekDay.sunday)
+                .map((d) => DayTimetable(day: d, entries: []))
+                .toList(),
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+          );
+
+      // Find the day timetable
+      final dayIndex =
+          timetable.weekTimetable.indexWhere((d) => d.day == entry.day);
+      if (dayIndex == -1) {
+        // shouldn't happen; create day
+        timetable.weekTimetable.add(DayTimetable(day: entry.day, entries: []));
+      }
+
+      final targetDay = timetable.weekTimetable
+          .firstWhere((d) => d.day == entry.day, orElse: () => DayTimetable(day: entry.day, entries: []));
+
+      // Remove any existing entry in same slot and replace
+      final existingIndex =
+          targetDay.entries.indexWhere((e) => e.timeSlot.id == entry.timeSlot.id);
+      if (existingIndex != -1) {
+        targetDay.entries[existingIndex] = entry;
+      } else {
+        targetDay.entries.add(entry);
+      }
+
+      // Update timestamps
       final now = DateTime.now();
-      final timetable = Timetable(
-        id: _currentTimetable?.id ?? now.millisecondsSinceEpoch.toString(),
-        classSectionId: _selectedClassSection!.id,
-        weekTimetable: weekTimetable,
-        createdAt: _currentTimetable?.createdAt ?? now,
-        updatedAt: now,
-      );
+      timetable = timetable.copyWith(updatedAt: now, weekTimetable: timetable.weekTimetable);
 
-      await _storageService.saveTimetable(timetable);
-      _currentTimetable = timetable;
-      loadData();
-      return true;
-    } catch (e) {
-      _errorMessage = 'Failed to save timetable: $e';
-      notifyListeners();
-      return false;
-    }
-  }
+      final success = _currentTimetable == null
+          ? await _timetableRepository.addTimetable(timetable)
+          : await _timetableRepository.updateTimetable(timetable);
 
-  /// Adds or updates an entry in the current timetable.
-  Future<bool> saveEntry(TimetableEntry entry) async {
-    if (_selectedClassSection == null) {
-      _errorMessage = 'Please select a class first';
-      notifyListeners();
-      return false;
-    }
-
-    // Validate faculty availability
-    if (entry.facultyId != null) {
-      final isAvailable = isFacultyAvailable(
-        entry.facultyId!,
-        entry.day,
-        entry.timeSlot,
-        excludeEntryId: entry.id,
-      );
-
-      if (!isAvailable) {
-        final faculty = getFaculty(entry.facultyId);
-        _errorMessage =
-            '${faculty?.name ?? "Faculty"} is already assigned to another class at this time.';
+      if (!success) {
+        _errorMessage = 'Failed to save timetable';
         notifyListeners();
         return false;
       }
-    }
 
-    try {
-      List<DayTimetable> weekTimetable;
-
-      if (_currentTimetable != null) {
-        weekTimetable = _currentTimetable!.weekTimetable.map((dayTimetable) {
-          if (dayTimetable.day == entry.day) {
-            // Remove existing entry with same ID if exists
-            final entries = dayTimetable.entries
-                .where((e) => e.id != entry.id)
-                .toList();
-            entries.add(entry);
-            // Sort by start time
-            entries.sort(
-              (a, b) => a.timeSlot.startTime.compareTo(b.timeSlot.startTime),
-            );
-            return DayTimetable(day: dayTimetable.day, entries: entries);
-          }
-          return dayTimetable;
-        }).toList();
-
-        // If day doesn't exist, add it
-        if (!weekTimetable.any((dt) => dt.day == entry.day)) {
-          weekTimetable.add(DayTimetable(day: entry.day, entries: [entry]));
-        }
+      // Update local cache
+      _currentTimetable = timetable;
+      // replace or add in list
+      final idx = _timetables.indexWhere((t) => t.id == timetable.id);
+      if (idx == -1) {
+        _timetables.add(timetable);
       } else {
-        weekTimetable = [
-          DayTimetable(day: entry.day, entries: [entry]),
-        ];
+        _timetables[idx] = timetable;
       }
 
-      return await saveTimetable(weekTimetable);
+      notifyListeners();
+      return true;
     } catch (e) {
       _errorMessage = 'Failed to save entry: $e';
       notifyListeners();
@@ -331,28 +262,49 @@ class TimetableViewModel extends ChangeNotifier {
     }
   }
 
-  /// Deletes an entry from the current timetable.
-  Future<bool> deleteEntry(WeekDay day, String timeSlotId) async {
+  /// Deletes an entry identified by day and slotId from the current timetable.
+  Future<bool> deleteEntry(WeekDay day, String slotId) async {
     if (_currentTimetable == null) {
-      _errorMessage = 'No timetable found';
+      _errorMessage = 'No timetable selected';
       notifyListeners();
       return false;
     }
 
     try {
-      final weekTimetable = _currentTimetable!.weekTimetable.map((
-        dayTimetable,
-      ) {
-        if (dayTimetable.day == day) {
-          final entries = dayTimetable.entries
-              .where((e) => e.timeSlot.id != timeSlotId)
-              .toList();
-          return DayTimetable(day: dayTimetable.day, entries: entries);
-        }
-        return dayTimetable;
-      }).toList();
+      final timetable = _currentTimetable!;
+      final dayTimetableIndex = timetable.weekTimetable.indexWhere((d) => d.day == day);
+      if (dayTimetableIndex == -1) {
+        _errorMessage = 'Entry not found';
+        notifyListeners();
+        return false;
+      }
 
-      return await saveTimetable(weekTimetable);
+      final dayTimetable = timetable.weekTimetable[dayTimetableIndex];
+      final entryIndex = dayTimetable.entries.indexWhere((e) => e.timeSlot.id == slotId);
+      if (entryIndex == -1) {
+        _errorMessage = 'Entry not found';
+        notifyListeners();
+        return false;
+      }
+
+      dayTimetable.entries.removeAt(entryIndex);
+
+      final now = DateTime.now();
+      final updatedTimetable = timetable.copyWith(updatedAt: now, weekTimetable: timetable.weekTimetable);
+
+      final success = await _timetableRepository.updateTimetable(updatedTimetable);
+      if (!success) {
+        _errorMessage = 'Failed to delete entry';
+        notifyListeners();
+        return false;
+      }
+
+      _currentTimetable = updatedTimetable;
+      final idx = _timetables.indexWhere((t) => t.id == updatedTimetable.id);
+      if (idx != -1) _timetables[idx] = updatedTimetable;
+
+      notifyListeners();
+      return true;
     } catch (e) {
       _errorMessage = 'Failed to delete entry: $e';
       notifyListeners();
@@ -360,7 +312,7 @@ class TimetableViewModel extends ChangeNotifier {
     }
   }
 
-  /// Deletes the entire timetable for the selected class.
+  /// Deletes the whole current timetable.
   Future<bool> deleteTimetable() async {
     if (_currentTimetable == null) {
       _errorMessage = 'No timetable to delete';
@@ -369,9 +321,17 @@ class TimetableViewModel extends ChangeNotifier {
     }
 
     try {
-      await _storageService.deleteTimetable(_currentTimetable!.id);
+      final id = _currentTimetable!.id;
+      final success = await _timetableRepository.deleteTimetable(id);
+      if (!success) {
+        _errorMessage = 'Failed to delete timetable';
+        notifyListeners();
+        return false;
+      }
+
+      _timetables.removeWhere((t) => t.id == id);
       _currentTimetable = null;
-      loadData();
+      notifyListeners();
       return true;
     } catch (e) {
       _errorMessage = 'Failed to delete timetable: $e';
@@ -380,54 +340,25 @@ class TimetableViewModel extends ChangeNotifier {
     }
   }
 
-  /// Gets entries for a specific day.
-  List<TimetableEntry> getEntriesForDay(WeekDay day) {
-    if (_currentTimetable == null) return [];
-    final dayTimetable = _currentTimetable!.weekTimetable
-        .where((dt) => dt.day == day)
-        .firstOrNull;
-    return dayTimetable?.entries ?? [];
-  }
-
-  /// Gets a map of subject code to assigned faculty names for the current class.
+  /// Builds a simple subject -> faculty name map for the selected class.
+  /// If multiple faculties can teach a subject, picks the first available.
   Map<String, String> getSubjectFacultyMap() {
-    if (_currentTimetable == null) return {};
+    final Map<String, String> map = {};
+    if (_selectedClassSection == null) return map;
 
-    final Map<String, Set<String>> subjectToFaculties = {};
-
-    for (final dayTimetable in _currentTimetable!.weekTimetable) {
-      for (final entry in dayTimetable.entries) {
-        if (entry.subjectCode != null && entry.facultyId != null) {
-          final faculty = getFaculty(entry.facultyId);
-          if (faculty != null) {
-            subjectToFaculties
-                .putIfAbsent(entry.subjectCode!, () => {})
-                .add(faculty.name);
-          }
-        }
-      }
+    for (final code in _selectedClassSection!.subjectCodes) {
+      final faculty = _faculties.firstWhere(
+        (f) => f.subjectCodes.contains(code),
+        orElse: () => Faculty(
+          id: '',
+          name: '---',
+          shortName: '',
+          computerCode: '',
+          subjectCodes: const [],
+        ),
+      );
+      map[code] = (faculty.id.isEmpty) ? '---' : faculty.name;
     }
-
-    return subjectToFaculties.map((code, names) => MapEntry(code, names.join(', ')));
-  }
-
-  /// Creates a default time slot.
-  TimeSlot createTimeSlot({
-    required int hour,
-    required int minute,
-    required int durationMinutes,
-    required SlotType type,
-  }) {
-    final now = DateTime.now();
-    final startTime = DateTime(now.year, now.month, now.day, hour, minute);
-    final endTime = startTime.add(Duration(minutes: durationMinutes));
-
-    return TimeSlot(
-      id: '${hour}_$minute',
-      startTime: startTime,
-      endTime: endTime,
-      type: type,
-      durationMinutes: durationMinutes,
-    );
+    return map;
   }
 }

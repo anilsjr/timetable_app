@@ -12,6 +12,7 @@ import '../../data/repo/class_section_repository_impl.dart';
 import '../../domain/repo/timetable_repository.dart';
 import '../../data/repo/timetable_repository_impl.dart';
 
+
 final getIt = GetIt.instance;
 
 /// Initializes the dependency injection container.

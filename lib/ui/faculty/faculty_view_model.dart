@@ -2,16 +2,16 @@ import 'package:flutter/foundation.dart';
 
 import '../../model/faculty.dart';
 import '../../model/subject.dart';
-import '../../service/storage_service.dart';
+import '../../domain/repo/faculty_repository.dart';
 
 /// ViewModel for managing faculty data.
 class FacultyViewModel extends ChangeNotifier {
-  FacultyViewModel({required StorageService storageService})
-    : _storageService = storageService {
+  FacultyViewModel({required FacultyRepository facultyRepository})
+    : _facultyRepository = facultyRepository {
     loadData();
   }
 
-  final StorageService _storageService;
+  final FacultyRepository _facultyRepository;
 
   List<Faculty> _faculties = [];
   List<Faculty> get faculties => _faculties;
@@ -32,8 +32,9 @@ class FacultyViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _faculties = _storageService.getAllFaculties();
-      _subjects = _storageService.getAllSubjects();
+      _facultyRepository.loadFaculties();
+      _faculties = _facultyRepository.getAllFaculties();
+      _subjects = _facultyRepository.getAllSubjects();
     } catch (e) {
       _errorMessage = 'Failed to load data: $e';
     } finally {
@@ -61,9 +62,7 @@ class FacultyViewModel extends ChangeNotifier {
     bool isActive = true,
   }) async {
     try {
-      final id = DateTime.now().millisecondsSinceEpoch.toString();
-      final faculty = Faculty(
-        id: id,
+      final result = await _facultyRepository.addFaculty(
         name: name,
         shortName: shortName,
         computerCode: computerCode,
@@ -72,10 +71,8 @@ class FacultyViewModel extends ChangeNotifier {
         subjectCodes: subjectCodes,
         isActive: isActive,
       );
-
-      await _storageService.saveFaculty(faculty);
-      loadData();
-      return true;
+      if (result) loadData();
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to add faculty: $e';
       notifyListeners();
@@ -95,7 +92,7 @@ class FacultyViewModel extends ChangeNotifier {
     bool isActive = true,
   }) async {
     try {
-      final faculty = Faculty(
+      final result = await _facultyRepository.updateFaculty(
         id: id,
         name: name,
         shortName: shortName,
@@ -105,10 +102,8 @@ class FacultyViewModel extends ChangeNotifier {
         subjectCodes: subjectCodes,
         isActive: isActive,
       );
-
-      await _storageService.saveFaculty(faculty);
-      loadData();
-      return true;
+      if (result) loadData();
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to update faculty: $e';
       notifyListeners();
@@ -119,9 +114,9 @@ class FacultyViewModel extends ChangeNotifier {
   /// Deletes a faculty by ID.
   Future<bool> deleteFaculty(String id) async {
     try {
-      await _storageService.deleteFaculty(id);
-      loadData();
-      return true;
+      final result = await _facultyRepository.deleteFaculty(id);
+      if (result) loadData();
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to delete faculty: $e';
       notifyListeners();

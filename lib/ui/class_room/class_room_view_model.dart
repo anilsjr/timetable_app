@@ -2,16 +2,16 @@ import 'package:flutter/foundation.dart';
 
 import '../../model/class_section.dart';
 import '../../model/subject.dart';
-import '../../service/storage_service.dart';
+import '../../domain/repo/class_section_repository.dart';
 
 /// ViewModel for managing class room data.
 class ClassSectionViewModel extends ChangeNotifier {
-  ClassSectionViewModel({required StorageService storageService})
-    : _storageService = storageService {
+  ClassSectionViewModel({required ClassSectionRepository classSectionRepository})
+    : _classSectionRepository = classSectionRepository {
     loadData();
   }
 
-  final StorageService _storageService;
+  final ClassSectionRepository _classSectionRepository;
 
   List<ClassSection> _classSections = [];
   List<ClassSection> get classSections => _classSections;
@@ -32,8 +32,9 @@ class ClassSectionViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _classSections = _storageService.getAllClassSections();
-      _subjects = _storageService.getAllSubjects();
+      _classSectionRepository.loadClassSections();
+      _classSections = _classSectionRepository.getAllClassSections();
+      _subjects = _classSectionRepository.getAllSubjects();
     } catch (e) {
       _errorMessage = 'Failed to load data: $e';
     } finally {
@@ -57,15 +58,13 @@ class ClassSectionViewModel extends ChangeNotifier {
     required List<String> subjectCodes,
   }) async {
     try {
-      final classSection = ClassSection.fromId(
-        id,
+      final result = await _classSectionRepository.addClassSection(
+        id: id,
         studentCount: studentCount,
         subjectCodes: subjectCodes,
       );
-
-      await _storageService.saveClassSection(classSection);
-      loadData();
-      return true;
+      if (result) loadData();
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to add class: $e';
       notifyListeners();
@@ -80,15 +79,13 @@ class ClassSectionViewModel extends ChangeNotifier {
     required List<String> subjectCodes,
   }) async {
     try {
-      final classSection = ClassSection.fromId(
-        id,
+      final result = await _classSectionRepository.updateClassSection(
+        id: id,
         studentCount: studentCount,
         subjectCodes: subjectCodes,
       );
-
-      await _storageService.saveClassSection(classSection);
-      loadData();
-      return true;
+      if (result) loadData();
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to update class: $e';
       notifyListeners();
@@ -99,9 +96,9 @@ class ClassSectionViewModel extends ChangeNotifier {
   /// Deletes a class room by ID.
   Future<bool> deleteClassSection(String id) async {
     try {
-      await _storageService.deleteClassSection(id);
-      loadData();
-      return true;
+      final result = await _classSectionRepository.deleteClassSection(id);
+      if (result) loadData();
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to delete class: $e';
       notifyListeners();

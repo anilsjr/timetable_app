@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:time_table_manager/domain/repo/timetable_repository.dart';
 
 import '../../model/class_section.dart';
 import '../../model/enums.dart';
@@ -11,9 +12,9 @@ import 'timetable_view_model.dart';
 
 /// Page for managing timetables.
 class TimetablePage extends StatefulWidget {
-  const TimetablePage({super.key, required this.storageService});
+  const TimetablePage({super.key, required this.timetableRepository});
 
-  final StorageService storageService;
+  final TimetableRepository timetableRepository;
 
   @override
   State<TimetablePage> createState() => _TimetablePageState();
@@ -25,7 +26,7 @@ class _TimetablePageState extends State<TimetablePage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = TimetableViewModel(storageService: widget.storageService);
+    _viewModel = TimetableViewModel(timetableRepository: widget.timetableRepository);
     _viewModel.addListener(_onViewModelChange);
   }
 
@@ -681,44 +682,49 @@ class _TimetablePageState extends State<TimetablePage> {
       );
     }
 
-    return InkWell(
-      onTap: () => _showAddEntryDialog(day, slot: slot, entry: entry),
-      onLongPress: entry != null ? () => _confirmDeleteEntry(entry) : null,
-      child: Container(
-        height: 80,
-        padding: const EdgeInsets.all(4),
-        color: entry != null ? _getEntryColor(entry) : null,
-        child: entry == null
-            ? const Icon(Icons.add, size: 16, color: Colors.grey)
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    _viewModel.getSubject(entry.subjectCode)?.code ?? '',
-                    style: const TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    _viewModel.getFaculty(entry.facultyId)?.name.split(' ').last ??
-                        '',
-                    style: const TextStyle(fontSize: 9),
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (entry.slotType == SlotType.lab)
-                    const Text(
-                      '(LAB)',
-                      style: TextStyle(fontSize: 8, color: Colors.blue),
-                    ),
-                ],
+   return InkWell(
+  onTap: () => _showAddEntryDialog(day, slot: slot, entry: entry),
+  onLongPress: entry != null ? () => _confirmDeleteEntry(entry) : null,
+  child: Container(
+    height: 80,
+    padding: const EdgeInsets.all(4),
+    color: entry != null ? _getEntryColor(entry) : null,
+    child: entry == null
+        ? const Icon(Icons.add, size: 16, color: Colors.grey)
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                // guard nullable subjectCode before calling getSubject
+                entry.subjectCode == null
+                    ? ''
+                    : _viewModel.getSubject(entry.subjectCode!)?.code ?? '',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-      ),
-    );
+              const SizedBox(height: 2),
+              Text(
+                // guard nullable facultyId before calling getFaculty
+                entry.facultyId == null
+                    ? ''
+                    : _viewModel.getFaculty(entry.facultyId!)?.name.split(' ').last ?? '',
+                style: const TextStyle(fontSize: 9),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              if (entry.slotType == SlotType.lab)
+                const Text(
+                  '(LAB)',
+                  style: TextStyle(fontSize: 8, color: Colors.blue),
+                ),
+            ],
+          ),
+  ),
+);
   }
 
   Color _getEntryColor(TimetableEntry entry) {

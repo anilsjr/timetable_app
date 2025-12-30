@@ -7,14 +7,13 @@ import 'faculty_view_model.dart';
 
 /// Page for managing faculties (add, edit, delete).
 class FacultyPage extends StatefulWidget {
-  const FacultyPage({super.key, required this.storageService});
+  const FacultyPage({super.key, required this.facultyRepository});
 
-  final StorageService storageService;
+  final FacultyRepository facultyRepository;
 
   @override
   State<FacultyPage> createState() => _FacultyPageState();
 }
-
 class _FacultyPageState extends State<FacultyPage> {
   late final FacultyViewModel _viewModel;
 
