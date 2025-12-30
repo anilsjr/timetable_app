@@ -1,19 +1,17 @@
 import 'package:flutter/material.dart';
 
+import 'core/di/di_container.dart';
 import 'route/route_name.dart';
 import 'route/routes.dart';
-import 'service/storage_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final storageService = StorageService();
-  await storageService.init();
-
-  Routes.setStorageService(storageService);
+  await setupDependencies();
 
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});

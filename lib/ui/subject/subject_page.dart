@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+// import 'package:provider/provider.dart';
 
+import '../../domain/repo/subject_repository.dart';
 import '../../model/subject.dart';
-import '../../service/storage_service.dart';
 import 'subject_view_model.dart';
 
 /// Page for managing subjects (add, edit, delete).
 class SubjectPage extends StatefulWidget {
-  const SubjectPage({super.key, required this.storageService});
+  const SubjectPage({super.key, required this.subjectRepository});
 
-  final StorageService storageService;
+  final SubjectRepository subjectRepository;
 
   @override
   State<SubjectPage> createState() => _SubjectPageState();
@@ -20,7 +21,7 @@ class _SubjectPageState extends State<SubjectPage> {
   @override
   void initState() {
     super.initState();
-    _viewModel = SubjectViewModel(storageService: widget.storageService);
+    _viewModel = SubjectViewModel(subjectRepository: widget.subjectRepository);
     _viewModel.addListener(_onViewModelChange);
   }
 

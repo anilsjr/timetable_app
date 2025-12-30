@@ -1,16 +1,16 @@
 import 'package:flutter/foundation.dart';
 
+import '../../domain/repo/subject_repository.dart';
 import '../../model/subject.dart';
-import '../../service/storage_service.dart';
 
 /// ViewModel for managing subject data.
 class SubjectViewModel extends ChangeNotifier {
-  SubjectViewModel({required StorageService storageService})
-    : _storageService = storageService {
+  SubjectViewModel({required SubjectRepository subjectRepository})
+    : _subjectRepository = subjectRepository {
     loadSubjects();
   }
 
-  final StorageService _storageService;
+  final SubjectRepository _subjectRepository;
 
   List<Subject> _subjects = [];
   List<Subject> get subjects => _subjects;
@@ -28,10 +28,11 @@ class SubjectViewModel extends ChangeNotifier {
     notifyListeners();
 
     try {
-      _subjects = _storageService.getAllSubjects();
+      _subjects = _subjectRepository.getAllSubjects();
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
       _errorMessage = 'Failed to load subjects: $e';
-    } finally {
       _isLoading = false;
       notifyListeners();
     }
@@ -45,16 +46,17 @@ class SubjectViewModel extends ChangeNotifier {
     bool isLab = false,
   }) async {
     try {
-      final subject = Subject(
+      final result = await _subjectRepository.addSubject(
         name: name,
         code: code,
         weeklyLectures: weeklyLectures,
         isLab: isLab,
       );
 
-      await _storageService.saveSubject(subject);
-      loadSubjects();
-      return true;
+      if (result) {
+        loadSubjects();
+      }
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to add subject: $e';
       notifyListeners();
@@ -70,16 +72,17 @@ class SubjectViewModel extends ChangeNotifier {
     bool isLab = false,
   }) async {
     try {
-      final subject = Subject(
+      final result = await _subjectRepository.updateSubject(
         name: name,
         code: code,
         weeklyLectures: weeklyLectures,
         isLab: isLab,
       );
 
-      await _storageService.saveSubject(subject);
-      loadSubjects();
-      return true;
+      if (result) {
+        loadSubjects();
+      }
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to update subject: $e';
       notifyListeners();
@@ -90,9 +93,12 @@ class SubjectViewModel extends ChangeNotifier {
   /// Deletes a subject by code.
   Future<bool> deleteSubject(String code) async {
     try {
-      await _storageService.deleteSubject(code);
-      loadSubjects();
-      return true;
+      final result = await _subjectRepository.deleteSubject(code);
+      
+      if (result) {
+        loadSubjects();
+      }
+      return result;
     } catch (e) {
       _errorMessage = 'Failed to delete subject: $e';
       notifyListeners();
@@ -102,10 +108,6 @@ class SubjectViewModel extends ChangeNotifier {
 
   /// Gets a subject by code.
   Subject? getSubject(String code) {
-    try {
-      return _subjects.firstWhere((s) => s.code == code);
-    } catch (_) {
-      return null;
-    }
+    return _subjectRepository.getSubject(code);
   }
 }

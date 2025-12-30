@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/di/di_container.dart';
+import '../domain/repo/subject_repository.dart';
 import '../service/storage_service.dart';
 import '../ui/class_room/class_room_page.dart';
 import '../ui/faculty/faculty_page.dart';
@@ -11,21 +13,6 @@ import 'route_name.dart';
 class Routes {
   const Routes._();
 
-  static StorageService? _storageService;
-
-  /// Sets the storage service for route builders.
-  static void setStorageService(StorageService storageService) {
-    _storageService = storageService;
-  }
-
-  /// Gets the storage service.
-  static StorageService getStorageService() {
-    if (_storageService == null) {
-      throw Exception('StorageService not initialized');
-    }
-    return _storageService!;
-  }
-
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
       case RouteName.home:
@@ -36,25 +23,27 @@ class Routes {
 
       case RouteName.subject:
         return MaterialPageRoute<void>(
-          builder: (_) => SubjectPage(storageService: _storageService!),
+          builder: (_) => SubjectPage(
+            subjectRepository: getIt<SubjectRepository>(),
+          ),
           settings: settings,
         );
 
       case RouteName.faculty:
         return MaterialPageRoute<void>(
-          builder: (_) => FacultyPage(storageService: _storageService!),
+          builder: (_) => FacultyPage(storageService: getIt<StorageService>()),
           settings: settings,
         );
 
       case RouteName.ClassSection:
         return MaterialPageRoute<void>(
-          builder: (_) => ClassSectionPage(storageService: _storageService!),
+          builder: (_) => ClassSectionPage(storageService: getIt<StorageService>()),
           settings: settings,
         );
 
       case RouteName.timeTable:
         return MaterialPageRoute<void>(
-          builder: (_) => TimetablePage(storageService: _storageService!),
+          builder: (_) => TimetablePage(storageService: getIt<StorageService>()),
           settings: settings,
         );
 

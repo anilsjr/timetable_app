@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
 import 'package:time_table_manager/route/routes.dart';
 
 import '../core/dummy_data_utils.dart';
@@ -31,7 +32,7 @@ class _HomePageState extends State<HomePage> {
 
     try {
       // Get storage service from the routes
-      final storageService = Routes.getStorageService();
+      final storageService = GetIt.instance<StorageService>();
 
       final success = await DummyDataUtils.insertDummyData(storageService);
 
