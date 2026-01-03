@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
 
 import '../model/class_section.dart';
 import '../model/enums.dart';
@@ -20,6 +19,17 @@ class TimetableExportService {
   String _generateFileName(String prefix, String extension) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     return '${prefix}_Timetable_$timestamp.$extension';
+  }
+
+  /// Creates a placeholder Faculty object for cases where no faculty is found.
+  Faculty _createPlaceholderFaculty() {
+    return Faculty(
+      id: '',
+      name: '---',
+      shortName: '',
+      computerCode: '',
+      subjectCodes: const [],
+    );
   }
 
   /// Generates and saves an Excel file for the given timetable.
@@ -163,13 +173,7 @@ class TimetableExportService {
       for (var subject in classSubjects) {
         final faculty = faculties.firstWhere(
           (f) => f.subjectCodes.contains(subject.code),
-          orElse: () => Faculty(
-            id: '',
-            name: '---',
-            shortName: '',
-            computerCode: '',
-            subjectCodes: const [],
-          ),
+          orElse: _createPlaceholderFaculty,
         );
 
         sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: currentRow)).value =
@@ -320,13 +324,7 @@ class TimetableExportService {
                       final subject = _getSubject(subjects, code);
                       final faculty = faculties.firstWhere(
                         (f) => f.subjectCodes.contains(code),
-                        orElse: () => Faculty(
-                          id: '',
-                          name: '---',
-                          shortName: '',
-                          computerCode: '',
-                          subjectCodes: const [],
-                        ),
+                        orElse: _createPlaceholderFaculty,
                       );
                       return pw.TableRow(
                         children: [
