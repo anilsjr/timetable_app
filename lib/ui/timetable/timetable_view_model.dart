@@ -9,6 +9,7 @@ import '../../model/time_slot.dart';
 import '../../model/timetable.dart';
 import '../../model/timetable_entry.dart';
 import '../../domain/repo/timetable_repository.dart';
+import '../../service/timetable_export_service.dart';
 
 /// ViewModel for managing timetable data.
 class TimetableViewModel extends ChangeNotifier {
@@ -360,5 +361,55 @@ class TimetableViewModel extends ChangeNotifier {
       map[code] = (faculty.id.isEmpty) ? '---' : faculty.name;
     }
     return map;
+  }
+
+  /// Exports the current timetable to Excel format.
+  Future<String?> exportToExcel() async {
+    if (_currentTimetable == null || _selectedClassSection == null) {
+      _errorMessage = 'No timetable to export';
+      notifyListeners();
+      return null;
+    }
+
+    final exportService = TimetableExportService();
+    try {
+      final filePath = await exportService.exportToExcel(
+        timetable: _currentTimetable!,
+        classSection: _selectedClassSection!,
+        subjects: _subjects,
+        faculties: _faculties,
+        timeSlots: standardTimeSlots,
+      );
+      return filePath;
+    } catch (e) {
+      _errorMessage = 'Failed to export to Excel: $e';
+      notifyListeners();
+      return null;
+    }
+  }
+
+  /// Exports the current timetable to PDF format.
+  Future<String?> exportToPdf() async {
+    if (_currentTimetable == null || _selectedClassSection == null) {
+      _errorMessage = 'No timetable to export';
+      notifyListeners();
+      return null;
+    }
+
+    final exportService = TimetableExportService();
+    try {
+      final filePath = await exportService.exportToPdf(
+        timetable: _currentTimetable!,
+        classSection: _selectedClassSection!,
+        subjects: _subjects,
+        faculties: _faculties,
+        timeSlots: standardTimeSlots,
+      );
+      return filePath;
+    } catch (e) {
+      _errorMessage = 'Failed to export to PDF: $e';
+      notifyListeners();
+      return null;
+    }
   }
 }

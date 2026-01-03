@@ -335,6 +335,66 @@ class _TimetablePageState extends State<TimetablePage> {
     }
   }
 
+  void _showLoadingDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  void _hideLoadingDialog() {
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _exportToExcel() async {
+    if (_viewModel.currentTimetable == null) {
+      _showToast('No timetable to export', isError: true);
+      return;
+    }
+
+    _showLoadingDialog();
+
+    try {
+      final filePath = await _viewModel.exportToExcel();
+      _hideLoadingDialog();
+
+      if (filePath != null) {
+        _showToast('Excel file saved: $filePath');
+      } else {
+        _showToast(_viewModel.errorMessage ?? 'Failed to export', isError: true);
+      }
+    } catch (e) {
+      _hideLoadingDialog();
+      _showToast('Error: $e', isError: true);
+    }
+  }
+
+  Future<void> _exportToPdf() async {
+    if (_viewModel.currentTimetable == null) {
+      _showToast('No timetable to export', isError: true);
+      return;
+    }
+
+    _showLoadingDialog();
+
+    try {
+      final filePath = await _viewModel.exportToPdf();
+      _hideLoadingDialog();
+
+      if (filePath != null) {
+        _showToast('PDF file saved: $filePath');
+      } else {
+        _showToast(_viewModel.errorMessage ?? 'Failed to export', isError: true);
+      }
+    } catch (e) {
+      _hideLoadingDialog();
+      _showToast('Error: $e', isError: true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -343,12 +403,23 @@ class _TimetablePageState extends State<TimetablePage> {
         title: const Text('Timetable Grid', style: TextStyle(color: Colors.red, fontSize: 16),),
         centerTitle: true,
         actions: [
-          if (_viewModel.currentTimetable != null)
+          if (_viewModel.currentTimetable != null) ...[
+            IconButton(
+              icon: const Icon(Icons.file_download),
+              tooltip: 'Download as Excel',
+              onPressed: _exportToExcel,
+            ),
+            IconButton(
+              icon: const Icon(Icons.picture_as_pdf),
+              tooltip: 'Download as PDF',
+              onPressed: _exportToPdf,
+            ),
             IconButton(
               icon: const Icon(Icons.delete_forever),
               tooltip: 'Delete Timetable',
               onPressed: _confirmDeleteTimetable,
             ),
+          ],
         ],
       ),
       body: _buildBody(),
