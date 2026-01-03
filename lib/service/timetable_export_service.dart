@@ -169,7 +169,6 @@ class TimetableExportService {
             shortName: '',
             computerCode: '',
             subjectCodes: const [],
-            isActive: false,
           ),
         );
 
@@ -327,7 +326,6 @@ class TimetableExportService {
                           shortName: '',
                           computerCode: '',
                           subjectCodes: const [],
-                          isActive: false,
                         ),
                       );
                       return pw.TableRow(
@@ -378,17 +376,20 @@ class TimetableExportService {
       Directory? directory;
 
       if (Platform.isAndroid) {
-        // Request storage permission for Android
-        final status = await Permission.storage.request();
-        if (!status.isGranted) {
-          // Try manageExternalStorage for Android 11+
-          final manageStatus = await Permission.manageExternalStorage.request();
-          if (!manageStatus.isGranted) {
+        // For Android, use app-specific directory which doesn't require permissions
+        // Files will be accessible in Android/data/package_name/files/
+        directory = await getExternalStorageDirectory();
+        
+        // If that fails, request storage permission as fallback
+        if (directory == null) {
+          final status = await Permission.storage.request();
+          if (status.isGranted) {
+            directory = await getExternalStorageDirectory();
+          } else {
             debugPrint('Storage permission denied');
             return null;
           }
         }
-        directory = await getExternalStorageDirectory();
       } else if (Platform.isIOS) {
         directory = await getApplicationDocumentsDirectory();
       } else {

@@ -356,7 +356,6 @@ class TimetableViewModel extends ChangeNotifier {
           shortName: '',
           computerCode: '',
           subjectCodes: const [],
-          isActive: false,
         ),
       );
       map[code] = (faculty.id.isEmpty) ? '---' : faculty.name;
