@@ -16,6 +16,12 @@ import '../model/timetable_entry.dart';
 
 /// Service for exporting timetable data to Excel and PDF formats.
 class TimetableExportService {
+  /// Generates a filename with timestamp.
+  String _generateFileName(String prefix, String extension) {
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    return '${prefix}_Timetable_$timestamp.$extension';
+  }
+
   /// Generates and saves an Excel file for the given timetable.
   Future<String?> exportToExcel({
     required Timetable timetable,
@@ -182,7 +188,7 @@ class TimetableExportService {
       }
 
       // Save file
-      final fileName = '${classSection.fullId}_Timetable_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final fileName = _generateFileName(classSection.fullId, 'xlsx');
       final filePath = await _saveFile(excel.encode()!, fileName);
       return filePath;
     } catch (e) {
@@ -341,7 +347,7 @@ class TimetableExportService {
       );
 
       // Save file
-      final fileName = '${classSection.fullId}_Timetable_${DateTime.now().millisecondsSinceEpoch}.pdf';
+      final fileName = _generateFileName(classSection.fullId, 'pdf');
       final bytes = await pdf.save();
       final filePath = await _saveFile(bytes, fileName);
       return filePath;
@@ -406,34 +412,24 @@ class TimetableExportService {
 
   /// Helper to get an entry from timetable.
   TimetableEntry? _getEntry(Timetable timetable, WeekDay day, String slotId) {
-    try {
-      final dayTimetable = timetable.weekTimetable.firstWhere(
-        (d) => d.day == day,
-      );
-      return dayTimetable.entries.firstWhere(
-        (e) => e.timeSlot.id == slotId,
-      );
-    } catch (e) {
-      return null;
-    }
+    final dayTimetable = timetable.weekTimetable
+        .where((d) => d.day == day)
+        .firstOrNull;
+    if (dayTimetable == null) return null;
+    
+    return dayTimetable.entries
+        .where((e) => e.timeSlot.id == slotId)
+        .firstOrNull;
   }
 
   /// Helper to get subject by code.
   Subject? _getSubject(List<Subject> subjects, String code) {
-    try {
-      return subjects.firstWhere((s) => s.code == code);
-    } catch (e) {
-      return null;
-    }
+    return subjects.where((s) => s.code == code).firstOrNull;
   }
 
   /// Helper to get faculty by id.
   Faculty? _getFaculty(List<Faculty> faculties, String id) {
-    try {
-      return faculties.firstWhere((f) => f.id == id);
-    } catch (e) {
-      return null;
-    }
+    return faculties.where((f) => f.id == id).firstOrNull;
   }
 
   /// Helper to format week day.
