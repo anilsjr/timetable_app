@@ -335,13 +335,7 @@ class _TimetablePageState extends State<TimetablePage> {
     }
   }
 
-  Future<void> _exportToExcel() async {
-    if (_viewModel.currentTimetable == null) {
-      _showToast('No timetable to export', isError: true);
-      return;
-    }
-
-    // Show loading indicator
+  void _showLoadingDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -349,12 +343,23 @@ class _TimetablePageState extends State<TimetablePage> {
         child: CircularProgressIndicator(),
       ),
     );
+  }
+
+  void _hideLoadingDialog() {
+    if (mounted) Navigator.pop(context);
+  }
+
+  Future<void> _exportToExcel() async {
+    if (_viewModel.currentTimetable == null) {
+      _showToast('No timetable to export', isError: true);
+      return;
+    }
+
+    _showLoadingDialog();
 
     try {
       final filePath = await _viewModel.exportToExcel();
-      
-      // Close loading indicator
-      if (mounted) Navigator.pop(context);
+      _hideLoadingDialog();
 
       if (filePath != null) {
         _showToast('Excel file saved: $filePath');
@@ -362,8 +367,7 @@ class _TimetablePageState extends State<TimetablePage> {
         _showToast(_viewModel.errorMessage ?? 'Failed to export', isError: true);
       }
     } catch (e) {
-      // Close loading indicator
-      if (mounted) Navigator.pop(context);
+      _hideLoadingDialog();
       _showToast('Error: $e', isError: true);
     }
   }
@@ -374,20 +378,11 @@ class _TimetablePageState extends State<TimetablePage> {
       return;
     }
 
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    _showLoadingDialog();
 
     try {
       final filePath = await _viewModel.exportToPdf();
-      
-      // Close loading indicator
-      if (mounted) Navigator.pop(context);
+      _hideLoadingDialog();
 
       if (filePath != null) {
         _showToast('PDF file saved: $filePath');
@@ -395,8 +390,7 @@ class _TimetablePageState extends State<TimetablePage> {
         _showToast(_viewModel.errorMessage ?? 'Failed to export', isError: true);
       }
     } catch (e) {
-      // Close loading indicator
-      if (mounted) Navigator.pop(context);
+      _hideLoadingDialog();
       _showToast('Error: $e', isError: true);
     }
   }

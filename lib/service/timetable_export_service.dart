@@ -371,6 +371,11 @@ class TimetableExportService {
   }
 
   /// Saves file to device storage.
+  /// 
+  /// Returns the file path on success, null on failure.
+  /// - Android: Saves to app-specific external storage (Android/data/package_name/files/)
+  /// - iOS: Saves to app documents directory
+  /// - Other platforms: Saves to downloads directory
   Future<String?> _saveFile(List<int> bytes, String fileName) async {
     try {
       Directory? directory;
@@ -379,17 +384,6 @@ class TimetableExportService {
         // For Android, use app-specific directory which doesn't require permissions
         // Files will be accessible in Android/data/package_name/files/
         directory = await getExternalStorageDirectory();
-        
-        // If that fails, request storage permission as fallback
-        if (directory == null) {
-          final status = await Permission.storage.request();
-          if (status.isGranted) {
-            directory = await getExternalStorageDirectory();
-          } else {
-            debugPrint('Storage permission denied');
-            return null;
-          }
-        }
       } else if (Platform.isIOS) {
         directory = await getApplicationDocumentsDirectory();
       } else {
