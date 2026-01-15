@@ -12,19 +12,19 @@ class DummyDataUtils {
       // Clear existing data
       await storageService.clearAll();
 
-      // Create 6 subjects
+      // Create subjects
       final subjects = _createSubjects();
       for (final subject in subjects) {
         await storageService.saveSubject(subject);
       }
 
-      // Create 12 faculty members
+      // Create faculties
       final faculties = _createFaculties(subjects);
       for (final faculty in faculties) {
         await storageService.saveFaculty(faculty);
       }
 
-      // Create 10 classes
+      // Create class sections
       final ClassSections = _createClassSections(subjects);
       for (final ClassSection in ClassSections) {
         await storageService.saveClassSection(ClassSection);
@@ -89,6 +89,16 @@ class DummyDataUtils {
       const Subject(name: 'Innternship-I', code: 'IP001', weeklyLectures: 3, isLab: false),
       const Subject(name: 'Innternship-II', code: 'IP002', weeklyLectures: 3, isLab: false),
       const Subject(name: 'Expert Lecture', code: 'EP001', weeklyLectures: 3, isLab: false),
+
+      // Added from IPS Academy (Dec 2025 timetable) - B.Tech III / V / VII semesters
+      const Subject(name: 'Major Project Phase-I', code: 'CS451', weeklyLectures: 2, isLab: false),
+      const Subject(name: 'Robotics', code: 'CS452', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Internet of Things', code: 'CS453', weeklyLectures: 3, isLab: true),
+      const Subject(name: 'Blockchain Technology', code: 'CS454', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Soft Computing', code: 'CS455', weeklyLectures: 3, isLab: false),
+      const Subject(name: 'Mini Project', code: 'CS456', weeklyLectures: 2, isLab: true),
+      const Subject(name: 'Environmental Science', code: 'CS457', weeklyLectures: 2, isLab: false),
+      const Subject(name: 'Discrete Mathematics', code: 'CS458', weeklyLectures: 4, isLab: false),
     ];
   }
 
@@ -102,7 +112,7 @@ class DummyDataUtils {
         computerCode: 'FAC001',
         email: 'raj.kumar@college.edu',
         phone: '9876543210',
-        subjectCodes: ['CS202', 'CS206'], // DSA, ADA
+        subjectCodes: ['CS202', 'CS206', 'CS456'], // DSA, ADA, Mini Project
         isActive: true,
       ),
       Faculty(
@@ -112,7 +122,7 @@ class DummyDataUtils {
         computerCode: 'FAC002',
         email: 'priya.sharma@college.edu',
         phone: '9876543211',
-        subjectCodes: ['CS202', 'CS210'], // DSA, Python
+        subjectCodes: ['CS202', 'CS210', 'CS307'], // DSA, Python, Data Science
         isActive: true,
       ),
       Faculty(
@@ -122,7 +132,7 @@ class DummyDataUtils {
         computerCode: 'FAC003',
         email: 'vikram.singh@college.edu',
         phone: '9876543212',
-        subjectCodes: ['CS303', 'CS304', 'CS401'], // ML, AI, DL
+        subjectCodes: ['CS303', 'CS304', 'CS401', 'CS452'], // ML, AI, DL, Robotics
         isActive: true,
       ),
       Faculty(
@@ -132,7 +142,7 @@ class DummyDataUtils {
         computerCode: 'FAC004',
         email: 'neha.patel@college.edu',
         phone: '9876543213',
-        subjectCodes: ['BT103', 'CS201'], // Math-I, Math-III
+        subjectCodes: ['BT103', 'CS201', 'CS458'], // Math-I, Math-III, Discrete Math
         isActive: true,
       ),
       Faculty(
@@ -142,7 +152,7 @@ class DummyDataUtils {
         computerCode: 'FAC005',
         email: 'arjun.reddy@college.edu',
         phone: '9876543214',
-        subjectCodes: ['CS207', 'CS209'], // OS, DBMS
+        subjectCodes: ['CS207', 'CS209', 'CS302'], // OS, DBMS, CN
         isActive: true,
       ),
       Faculty(
@@ -152,7 +162,7 @@ class DummyDataUtils {
         computerCode: 'FAC006',
         email: 'anjali.verma@college.edu',
         phone: '9876543215',
-        subjectCodes: ['CS302', 'CS403'], // CN, Info Security
+        subjectCodes: ['CS302', 'CS403', 'CS453', 'CS454'], // CN, Info Security, IoT, Blockchain
         isActive: true,
       ),
       Faculty(
@@ -162,7 +172,7 @@ class DummyDataUtils {
         computerCode: 'FAC007',
         email: 'ravi.nair@college.edu',
         phone: '9876543216',
-        subjectCodes: ['FT201', 'FT303'], // Fire Physics, Fire Fighting
+        subjectCodes: ['FT201', 'FT303', 'FT302'], // Fire Physics, Fire Fighting, Industrial Safety
         isActive: true,
       ),
       Faculty(
@@ -172,7 +182,7 @@ class DummyDataUtils {
         computerCode: 'FAC008',
         email: 'divya.kumar@college.edu',
         phone: '9876543217',
-        subjectCodes: ['FT302', 'FT402'], // Industrial Safety, Disaster Mgmt
+        subjectCodes: ['FT302', 'FT402', 'FT301'], // Industrial Safety, Disaster Mgmt, Town Planning
         isActive: true,
       ),
       Faculty(
@@ -182,7 +192,7 @@ class DummyDataUtils {
         computerCode: 'FAC009',
         email: 'sanjay.rao@college.edu',
         phone: '9876543218',
-        subjectCodes: ['BT101', 'BT102'], // Physics, Chemistry
+        subjectCodes: ['BT101', 'BT102', 'BT103'], // Physics, Chemistry, Math-I
         isActive: true,
       ),
       Faculty(
@@ -192,7 +202,7 @@ class DummyDataUtils {
         computerCode: 'FAC010',
         email: 'akshara.singh@college.edu',
         phone: '9876543219',
-        subjectCodes: ['CS305', 'CS307'], // Web Tech, Data Science
+        subjectCodes: ['CS305', 'CS307', 'CS210'], // Web Tech, Data Science, Python
         isActive: true,
       ),
       Faculty(
@@ -202,7 +212,7 @@ class DummyDataUtils {
         computerCode: 'FAC011',
         email: 'rohit.sharma@college.edu',
         phone: '9876543220',
-        subjectCodes: ['CS204', 'CS205'], // DLD, COA
+        subjectCodes: ['CS204', 'CS205', 'CS301', 'CS452'], // DLD, COA, TOC, Robotics
         isActive: true,
       ),
       Faculty(
@@ -212,7 +222,7 @@ class DummyDataUtils {
         computerCode: 'FAC012',
         email: null,
         phone: null,
-        subjectCodes: ['BT107', 'BT108'], // Communication, Workshop
+        subjectCodes: ['BT107', 'BT108', 'BT101'], // Communication, Workshop, Physics
         isActive: false,
       ),
     ];
